@@ -1,55 +1,7 @@
+# Segurança
 
-# Security Policy
+Achou uma falha? Não abra uma issue pública com detalhes de exploração. Use o relato privado de vulnerabilidade do GitHub neste repositório (aba Security, "Report a vulnerability").
 
-## Supported versions
+Versões com correção: só a mais recente na `main`.
 
-We maintain security fixes for the currently released builds of Numeric Clock:
-
-| Extension branch | GNOME Shell | Version line | Status              |
-| ---------------- | ----------- | ------------ | ------------------- |
-| `main`           | 45–51       | **v17.x**    | Actively supported  |
-
-GNOME Shell **42–44** support has ended. Upgrade to GNOME **45** or newer.
-
-**Platforms:** GNOME Shell **45–51** on **Wayland** (supported; nested-shell smoke tested) and **X11/Xorg** (supported; validated on maintainer X11 setup).
-
-## Reporting a vulnerability
-
-**Please do not open a public issue.**
-Use one of these private channels:
-
-1. **GitHub → Security → “Report a vulnerability”** (preferred).
-   This creates a private advisory thread with maintainers.
-2. **Email:** `nickotmazgin.dev@gmail.com`
-
-Include, if possible:
-
-* A clear description and impact
-* Steps to reproduce
-* Affected GNOME Shell version(s), **session type** (Wayland / X11 / Xorg), and OS
-* Relevant logs (e.g. `journalctl --user -b 0 -o cat | grep -i numeric-clock`)
-## Response & disclosure timeline
-
-* **Acknowledgement:** within **48 hours**
-* **Triage & initial assessment:** within **7 days**
-* **Fix, mitigation, or plan:** within **30 days** for supported lines
-
-We coordinate a disclosure date with you. Once a fix is released, we’ll publish a GitHub Security Advisory and, if appropriate, request a **CVE** through GitHub.
-
-Reporters will be credited in release notes unless you request otherwise.
-
-## Scope
-
-This policy covers the Numeric Clock extension code and release packages in this repository and on GNOME Extensions. It **does not** cover vulnerabilities in GNOME Shell itself, other extensions, or your distribution packages.
-
-## Safe-harbor
-
-We will not pursue legal action against good-faith research and reporting that:
-
-* Avoids privacy violations and data destruction,
-* Does not degrade other users’ experience, and
-* Respects coordinated disclosure.
-
-If in doubt, contact us first.
-
-See also [.github/CODEOWNERS](.github/CODEOWNERS).
+O que a extensão faz e não faz está em [PRIVACY.md](PRIVACY.md).

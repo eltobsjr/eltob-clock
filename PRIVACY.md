@@ -1,28 +1,28 @@
-# Privacy Policy — Numeric Clock
+# Privacidade — Eltob Clock
 
-Numeric Clock is a local GNOME Shell extension. It does not collect, transmit, or sell personal data.
+O Eltob Clock roda dentro do GNOME Shell, na sua sessão, e é local.
 
-## What stays on your computer
+## O que fica no seu computador
 
-- Your chosen **format string** and extension preferences (stored via GSettings on your system)
-- The extension reads your **system clock, locale, and timezone** only to display the time
+- Suas preferências (formato do relógio, estilo, opções de timer e clima), guardadas pelo GSettings.
+- O estado do timer e do cronômetro, só na memória enquanto a extensão está ativa. Nada é gravado em arquivo.
 
-## What Numeric Clock does not do
+## Rede e localização
 
-- No network access, analytics, telemetry, or crash reporting
-- No accounts, sign-in, or cloud sync
-- No access to files, contacts, location services, or other applications beyond the GNOME top-bar clock labels it formats
+- **A extensão não faz chamadas de rede e não guarda a sua localização.**
+- O clima vem do serviço de clima do próprio GNOME (libgweather). É o GNOME, e não esta extensão, que busca a previsão nos provedores da biblioteca, usando o local do seu clima.
+- Com "localização automática" ligada nas preferências, a extensão liga a opção de localização automática do clima do GNOME (`org.gnome.shell.weather automatic-location`), que usa o GeoClue. Ela só funciona com Serviços de localização ativos em Configurações, Privacidade. Desligue a opção para a extensão não mexer nessa configuração.
+- Com o cartão e a pílula de clima desligados, a extensão não lê dados de clima.
 
-## Third parties
+## O que a extensão não faz
 
-This extension does not embed third-party trackers or advertising SDKs. Links in the About page (GitHub, PayPal donate) open only when you click them.
+- Sem telemetria, análise, relatório de falhas, contas ou sincronização na nuvem.
+- Sem acesso a arquivos, contatos ou outros aplicativos além dos rótulos do relógio e do popup do GNOME que ela formata.
 
-## GNOME and your distribution
+## Terceiros
 
-Numeric Clock runs inside GNOME Shell under your user session. It follows the same local-only model as other official-style panel extensions. Your Linux distribution (e.g. Zorin OS, Ubuntu) and GNOME project policies govern the desktop environment itself.
+Os botões do popup que abrem páginas (por exemplo, apoiar o autor original) só abrem quando você clica.
 
-## Contact
+## Dúvidas
 
-Privacy questions: [nickotmazgin.dev@gmail.com](mailto:nickotmazgin.dev@gmail.com) or [GitHub Security](https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clock/security).
-
-MIT License — see [LICENSE](LICENSE).
+Abra uma issue em [github.com/eltobsjr/eltob-clock/issues](https://github.com/eltobsjr/eltob-clock/issues).

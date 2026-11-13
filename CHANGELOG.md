@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.0.0 — 2026-11-13 (fork Eltob Clock)
+
+Primeira versão do fork do Numeric Clock v17.7.0.
+
+- **Popup em 3 colunas:** coluna nova com hora formatada, timer, cronômetro e ações; cartão de clima abaixo do calendário; eventos e relógios mundiais nativos escondidos (voltam ao desativar).
+- **Timer** com anel de progresso, presets de 5 a 60 min, pausa e aviso com som ao terminar. **Cronômetro** com iniciar, pausar e zerar.
+- **Pílulas na barra:** timer, cronômetro e temperatura.
+- **Clima** pelo WeatherClient nativo do GNOME (libgweather + GeoClue): sem rede nem localização guardadas pela extensão.
+- **Visual** Eltob Indicator (Catppuccin Macchiato); estilos Padrão, Claro e Escuro nos cartões novos.
+- **Removido:** ícone do painel, menu rápido e cliques direito/médio (as ações foram para o popup).
+- Renomeado: UUID `eltob-clock@eltobsjr.gmail.com`, schema `org.gnome.shell.extensions.eltob-clock`. Interface em português.
+- Testes: lógica do timer (node), preferências (gjs) e smoke test num GNOME Shell isolado com 46 verificações.
+- Limpeza do que era do projeto original: workflow de release, FUNDING, CODEOWNERS, capturas e scripts de vídeo.
+
+---
+
+# Histórico do Numeric Clock (upstream)
+
 ## v17.7.0 — 2026-10-22
 
 **About and Donate in the menu, and a menu-position fix.**
