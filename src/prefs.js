@@ -16,7 +16,7 @@ const UPSTREAM_URL = 'https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clo
 const AUTHOR = 'Nick Otmazgin (original), fork de Eltob';
 const SETTING_KEYS = [
   'format-string', 'update-interval', 'only-topbar', 'smooth-second', 'menu-style',
-  'timer-sound', 'weather-auto-location', 'bar-layout', 'popup-col2', 'popup-col3',
+  'timer-sound', 'weather-auto-location', 'bar-layout', 'popup-col2', 'popup-col3', 'clock-position', 'lab-config',
 ];
 const CHEATSHEET = [
   ['%d / %m / %Y', 'Day · month · year (22 / 10 / 2026)'],
@@ -239,6 +239,7 @@ export default class EltobClockPrefs extends ExtensionPreferences {
     pageAbout.add(groupLinks);
 
     const labs = buildLabs(settings);
+    window.add(labs.labPage);
     window.add(pageSettings);
     for (const pg of labs.pages) window.add(pg);
     window.add(pageAbout);

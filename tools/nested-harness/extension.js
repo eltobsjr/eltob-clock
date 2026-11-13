@@ -289,6 +289,28 @@ async function run() {
 
   if (GLib.getenv('EC_SHOT_DIR')) await visualShots(s, dm, inst);
 
+  // ── Laboratorio: marcadores por extenso e posicao do relogio ───────
+  s.set_string('format-string', '{hora:extenso}');
+  await wait(400);
+  check('barra: hora por extenso', /horas?( e | em ponto)|o'clock|oh /.test(block('time').actor.text) || /^[a-zç -]+ (hora|horas)/.test(block('time').actor.text), block('time').actor.text);
+  s.set_string('format-string', '{dia:ordinal} de %B');
+  await wait(400);
+  check('barra: dia ordinal e mes', !block('time').actor.text.includes('{') && block('time').actor.text.length > 4, block('time').actor.text);
+  s.set_string('format-string', '%d/%m/%Y %H:%M:%S');
+  const box = () => dm.container.get_parent();
+  check('posicao padrao: centro', box() === Main.panel._centerBox);
+  s.set_string('clock-position', 'left');
+  await wait(300);
+  check('posicao: esquerda', box() === Main.panel._leftBox);
+  s.set_string('clock-position', 'right');
+  await wait(300);
+  check('posicao: direita', box() === Main.panel._rightBox);
+  s.set_string('clock-position', 'center');
+  await wait(300);
+  check('posicao: volta ao centro', box() === Main.panel._centerBox);
+  s.set_string('clock-position', 'left');
+  await wait(200);
+
   // ── Modo fora da barra ─────────────────────────────────────────────
   s.set_boolean('only-topbar', false);
   await wait(1200);
@@ -298,6 +320,7 @@ async function run() {
   // ── Desativar devolve tudo; reativar refaz ─────────────────────────
   await Main.extensionManager.disableExtension(UUID);
   await wait(300);
+  check('desativar devolve o relogio de onde saiu (esquerda -> centro)', dm.container.get_parent() === Main.panel._centerBox);
   check('desativar restaura o relogio', clock() === dm._clock.clock && dm._clockDisplay.visible, `${clock()} vs ${dm._clock.clock}`);
   check('coluna removida', findByClass(hbox(), 'ec-col').length === 0);
   check('compositor removido', findByClass(dm, 'ec-bar').length === 0);

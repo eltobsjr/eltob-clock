@@ -65,6 +65,7 @@ export default class EltobClockExtension extends Extension {
     this._bar = null;
 
     this._attachPopup();
+    this._applyPosition();
 
     this._settingsChangedIds = [
       this._settings.connect('changed::format-string', () => {
@@ -73,6 +74,7 @@ export default class EltobClockExtension extends Extension {
         this._restartTimer();
       }),
       this._settings.connect('changed::bar-layout', () => this._restartTimer()),
+      this._settings.connect('changed::clock-position', () => this._applyPosition()),
       this._settings.connect('changed::update-interval', () => this._restartTimer()),
       this._settings.connect('changed::smooth-second', () => this._restartTimer()),
       this._settings.connect('changed::only-topbar', () => {
@@ -103,11 +105,44 @@ export default class EltobClockExtension extends Extension {
       this._settings.disconnect(id);
     this._settingsChangedIds = null;
 
+    this._restorePosition();
     this._detachPopup();
     this._unhookAll();
     this._labels = null;
     this._restoreDateMenu();
     this._settings = null;
+  }
+
+  // ── Posicao do relogio na barra ───────────────────────────────────
+  // Centro e o padrao do GNOME; esquerda e direita movem o botao do relogio para outra caixa do painel.
+  _positionBox(pos) {
+    const panel = Main.panel;
+    return pos === 'left' ? panel._leftBox : pos === 'right' ? panel._rightBox : panel._centerBox;
+  }
+
+  _applyPosition() {
+    const dm = this._dateMenu();
+    const actor = dm?.container;
+    if (!actor || !this._settings) return;
+    const pos = this._settings.get_string('clock-position');
+    // Centro sem nada movido por nos: nao mexe (outra extensao, como a Just Perfection, pode ter posto o relogio).
+    if (pos === 'center' && !this._homeBox) return;
+    const target = this._positionBox(pos);
+    if (!target || actor.get_parent() === target) return;
+    this._homeBox ??= actor.get_parent();  // caixa de origem, para devolver ao desativar
+    actor.get_parent()?.remove_child(actor);
+    // Esquerda: depois de Atividades e dos itens do shell. Direita: antes dos icones do sistema.
+    if (pos === 'right') target.insert_child_at_index(actor, 0);
+    else target.add_child(actor);
+  }
+
+  _restorePosition() {
+    const actor = this._dateMenu()?.container;
+    const home = this._homeBox;
+    this._homeBox = null;
+    if (!actor || !home || actor.get_parent() === home) return;
+    actor.get_parent()?.remove_child(actor);
+    home.add_child(actor);
   }
 
   // ── Popup do relogio ──────────────────────────────────────────────

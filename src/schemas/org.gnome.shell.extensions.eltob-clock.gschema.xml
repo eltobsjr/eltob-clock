@@ -47,6 +47,21 @@
       <summary>Popup cards in the right column</summary>
       <description>Same format as popup-col2.</description>
     </key>
+    <key name="clock-position" type="s">
+      <choices>
+        <choice value="center"/>
+        <choice value="left"/>
+        <choice value="right"/>
+      </choices>
+      <default>'center'</default>
+      <summary>Clock position in the top bar</summary>
+      <description>Where the clock sits in the top bar: center (default), next to Activities on the left, or on the right before the system icons.</description>
+    </key>
+    <key name="lab-config" type="s">
+      <default>''</default>
+      <summary>Clock lab choices</summary>
+      <description>JSON with the options chosen on the Laboratório page. The lab turns them into format-string; this key only remembers the choices.</description>
+    </key>
     <key name="timer-sound" type="b">
       <default>true</default>
       <summary>Timer sound</summary>

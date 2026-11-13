@@ -10,6 +10,7 @@ Fork do [Numeric Clock](https://github.com/nickotmazgin/Linux-Numeric-Date-And-C
 
 ## O que faz
 
+- **Laboratório de formatos:** galeria de 16 formatos e opções de data e hora (inclusive por extenso, como "dezessete horas e dois minutos") com resultado ao vivo em cada escolha, mais a posição do relógio na barra (centro, esquerda ou direita).
 - **Barra por blocos:** hora ou data (cada uma com formato strftime próprio), timer, cronômetro, clima e texto livre, na ordem que você quiser, cada bloco como texto ou pílula colorida. Se algum bloco mostra segundos, o relógio anda a cada segundo.
 - **Popup em 3 colunas:** notificações, calendário e clima, e uma coluna nova com hora formatada, timer, cronômetro e ações. Os eventos e relógios mundiais nativos ficam escondidos (voltam ao desativar a extensão).
 - **Layout do popup editável:** cada cartão (hora, timer, cronômetro, clima, ações) pode ficar abaixo do calendário, na coluna da direita ou escondido, em tamanho normal ou compacto, na ordem que você escolher.
@@ -20,6 +21,8 @@ Fork do [Numeric Clock](https://github.com/nickotmazgin/Linux-Numeric-Date-And-C
 - **Formato livre (strftime)** com prévia ao vivo e 8 presets; tique exato na virada do segundo.
 
 ### Editor nas preferências
+
+![Página Laboratório](docs/prefs-laboratorio.png)
 
 | Barra | Popup |
 |---|---|
@@ -53,6 +56,7 @@ No Wayland, saia e entre na sessão para o GNOME carregar a extensão. Ela **sub
 | `./tools/build.sh` | gera o zip em `dist/` |
 | `./tools/validate.sh` | confere o zip e o `metadata.json` |
 | `node tools/tests/timerlogic.test.mjs` | testa a lógica do timer e do cronômetro |
+| `node tools/tests/clockfmt.test.mjs` | testa o laboratório (montagem do formato, palavras e marcadores) |
 | `node tools/tests/layoutlogic.test.mjs` | testa as regras do layout (blocos da barra e cartões do popup) |
 | `EC_SHOT_DIR=/pasta ./tools/prefs-shots.sh` | salva capturas das páginas Barra e Popup das preferências |
 | `./tools/prefs-test.sh` | testa a janela de preferências (gjs) |

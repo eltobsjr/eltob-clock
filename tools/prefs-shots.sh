@@ -7,7 +7,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/eltob-clock-shots.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/ext" "$WORK/config" "$EC_SHOT_DIR"
-cp -r "$ROOT_DIR"/src/{metadata.json,presets.js,layoutlogic.js,labs.js,schemas} "$WORK/ext/"
+cp -r "$ROOT_DIR"/src/{metadata.json,presets.js,layoutlogic.js,clockfmt.js,labs.js,schemas} "$WORK/ext/"
 glib-compile-schemas "$WORK/ext/schemas"
 cp "$ROOT_DIR/tools/tests/prefs-shim.js" "$WORK/ext/shim.js"
 cp "$ROOT_DIR/tools/tests/prefs-shots.js" "$WORK/ext/"

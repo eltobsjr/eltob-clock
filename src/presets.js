@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Shared format presets and formatting — no GNOME Shell imports (safe for prefs + extension).
 import GLib from 'gi://GLib';
+import { expandTokens, tokensShowSeconds } from './clockfmt.js';
 
 export const DEFAULT_FORMAT = '%d/%m/%Y %H:%M:%S';
 export const MAX_FORMAT_LENGTH = 128;
@@ -68,6 +69,18 @@ export const FORMAT_PRESETS = [
   },
 ];
 
+/** Idioma das palavras do laboratorio (hora e dia por extenso): o do sistema, pt ou en. */
+export function systemLang() {
+  return (GLib.get_language_names()[0] || '').startsWith('pt') ? 'pt' : 'en';
+}
+
+// Troca os marcadores {dia:…} e {hora:…} do laboratorio por texto; o resto segue para o strftime.
+function expand(fmt, dt) {
+  return expandTokens(fmt, {
+    day: dt.get_day_of_month(), hour: dt.get_hour(), minute: dt.get_minute(), second: dt.get_second(),
+  }, systemLang());
+}
+
 /**
  * Format the current local time. GLib returns null (it does not throw) for an
  * invalid format, and an empty format would blank the clock, so both fall back
@@ -77,7 +90,7 @@ export function formatNow(fmt) {
   const dt = GLib.DateTime.new_now_local();
   let out = null;
   try {
-    out = fmt ? dt.format(fmt) : null;
+    out = fmt ? dt.format(expand(fmt, dt)) : null;
   } catch {}
   return out || dt.format(DEFAULT_FORMAT);
 }
@@ -86,7 +99,8 @@ export function formatNow(fmt) {
 export function isValidFormat(fmt) {
   if (!fmt) return false;
   try {
-    return !!GLib.DateTime.new_now_local().format(fmt);
+    const dt = GLib.DateTime.new_now_local();
+    return !!dt.format(expand(fmt, dt));
   } catch {
     return false;
   }
@@ -94,7 +108,7 @@ export function isValidFormat(fmt) {
 
 /** True when the format changes every second, so the clock must tick at 1 s. */
 export function formatShowsSeconds(fmt) {
-  return /%[-_0^#]?[0-9]*[STsrc]/.test(fmt || '');
+  return /%[-_0^#]?[0-9]*[STsrc]/.test(fmt || '') || tokensShowSeconds(fmt);
 }
 
 export function applyPresetToSettings(settings, preset) {

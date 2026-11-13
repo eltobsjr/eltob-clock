@@ -22,7 +22,7 @@ function save(win, path) {
 
 app.connect('activate', async () => {
   const p = new Prefs(dir);
-  const win = new Adw.PreferencesWindow({ application: app, default_width: 720, default_height: 1000 });
+  const win = new Adw.PreferencesWindow({ application: app, default_width: 720, default_height: 1100 });
   p.fillPreferencesWindow(win);
   const s = p.getSettings();
   s.set_strv('bar-layout', ['time|plain|%a %d/%m', 'time|pill-blue|%H:%M', 'text|plain|•', 'timer|auto|', 'stopwatch|pill-green|', 'weather|pill-neutral|full']);
@@ -31,7 +31,7 @@ app.connect('activate', async () => {
   win.present();
   await wait(900);
   const pages = findAll(win, x => x instanceof Adw.PreferencesPage);
-  for (const [title, file] of [['Barra', 'prefs-barra.png'], ['Popup', 'prefs-popup.png']]) {
+  for (const [title, file] of [['Laboratório', 'prefs-laboratorio.png'], ['Barra', 'prefs-barra.png'], ['Popup', 'prefs-popup.png']]) {
     const pg = pages.find(x => x.title === title);
     win.set_visible_page(pg);
     await wait(700);

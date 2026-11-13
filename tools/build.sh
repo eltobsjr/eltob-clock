@@ -19,6 +19,7 @@ FILES=(
   weatherview.js
   barcomposer.js
   layoutlogic.js
+  clockfmt.js
   labs.js
   anim.js
   stylesheet.css

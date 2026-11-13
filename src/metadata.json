@@ -11,8 +11,8 @@
     "50",
     "51"
   ],
-  "version": 35,
-  "version-name": "1.1.0 45.51",
+  "version": 36,
+  "version-name": "1.2.0 45.51",
   "settings-schema": "org.gnome.shell.extensions.eltob-clock",
   "gettext-domain": "eltob-clock",
   "url": "https://github.com/eltobsjr/eltob-clock"

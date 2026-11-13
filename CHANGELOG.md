@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.2.0 — não lançada
+
+**Laboratório do relógio.** O popup continua como na v1.1.
+
+- **Página Laboratório** nas preferências: galeria com 16 formatos (cada cartão mostra a hora de agora) e opções para montar o seu: data (dia da semana, dia, mês, ano, ordem, separador, semana ISO, dia do ano), hora (24 h ou 12 h, segundos, separador, números ou palavras), composição e estilo. Cada opção mostra o resultado ao vivo, e a prévia da barra muda na hora.
+- **Hora e dia por extenso:** "dezessete horas e dois minutos", "treze de novembro", "1º". Entram no `format-string` como marcadores `{hora:extenso}`, `{hora12:extenso}`, `{dia:extenso}` e `{dia:ordinal}` (com `+s` para incluir segundos); funcionam em qualquer bloco de hora e no cartão do popup.
+- **Posição do relógio:** centro (padrão), esquerda ao lado de Atividades ou direita antes dos ícones (`clock-position`). Desativar a extensão devolve o relógio à caixa de onde ele saiu. Em "centro" a extensão não move nada, então a posição definida por outra extensão (como a Just Perfection) continua valendo.
+- A escolha de pílula do laboratório vale para o primeiro bloco de hora da barra. O laboratório avisa quando o formato foi editado à mão em outra página.
+- Novas opções no GSettings: `clock-position` e `lab-config`.
+- Testes: `clockfmt` (10) em node, 10 verificações novas das preferências e 7 no smoke test (marcadores e posição).
+
 ## v1.1.0 — 2026-11-13
 
 **Barra e popup configuráveis, com transições suaves.**

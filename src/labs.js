@@ -6,13 +6,18 @@ import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
+import Pango from 'gi://Pango';
 import {
   BAR_KINDS, KIND_ORDER, BAR_STYLES, STYLE_LABELS, WEATHER_MODES, CARD_LABELS, CARD_SIZES,
   DEFAULT_BAR, DEFAULT_COL2, DEFAULT_COL3,
   addBlock, cleanBar, cleanCols, hiddenCards, moveAt, moveCard, parseBlock, parseCard, removeAt,
-  setCardSize, updateBlock,
+  serializeBlock, setCardSize, updateBlock,
 } from './layoutlogic.js';
-import { FORMAT_PRESETS, formatNow } from './presets.js';
+import { FORMAT_PRESETS, formatNow, formatShowsSeconds, systemLang } from './presets.js';
+import {
+  DEFAULT_CFG, GALLERY, CHOICES, buildFormat, cleanCfg, parseCfg, sameCfg,
+  weekdayFmt, dayFmt, monthFmt, yearFmt, coreDateFmt, extrasFmt, timeFmt,
+} from './clockfmt.js';
 
 // Cores da previa: a mesma paleta (Catppuccin Macchiato) usada na barra de verdade.
 const CSS = `
@@ -24,6 +29,10 @@ const CSS = `
 .ecp-ok { background: rgba(166, 218, 149, 0.18); color: #a6da95; }
 .ecp-warn { background: rgba(238, 212, 159, 0.18); color: #eed49f; }
 .ecp-crit { background: rgba(237, 135, 150, 0.22); color: #ed8796; }
+.ecp-dim { color: #8087a2; }
+.ecp-card { border-radius: 14px; padding: 8px; border: 2px solid transparent; }
+.ecp-card-on { border-color: #8aadf4; }
+.ecp-card .ecp-bar { padding: 4px 8px; border-radius: 12px; }
 `;
 
 const PILL_CSS = {
@@ -241,6 +250,195 @@ function buildPopupPage(settings) {
   return { page, dispose: () => ids.forEach(id => settings.disconnect(id)) };
 }
 
+
+// ═══ Pagina "Laboratório" ═════════════════════════════════════════════
+const withK = (c, k, v) => ({ ...c, [k]: v });
+const SEP_LABELS = { ' ': 'Espaço', ' · ': 'Ponto  ·', ' — ': 'Traço  —', ' | ': 'Barra  |', ' • ': 'Bolinha  •' };
+const POS_LABELS = { center: 'Centro', left: 'Esquerda, ao lado de Atividades', right: 'Direita, antes dos ícones' };
+const YN = { true: 'Sim', false: 'Não' };
+
+/**
+ * Opcoes do laboratorio. [chave, titulo, valores, rotulos fixos, fragmento]: quando o valor nao tem rotulo
+ * fixo, o rotulo e o resultado ao vivo daquele fragmento (assim a escolha nunca e as cegas).
+ * `ifc` esconde a linha quando nao se aplica.
+ */
+function labSpec(lang) {
+  const time = (c, o = {}) => timeFmt({ ...c, timeOn: true, ...o });
+  return [
+    ['Data', [
+      ['dateOn', 'Mostrar a data', [true, false], YN],
+      ['weekday', 'Dia da semana', CHOICES.weekday, { none: 'Sem' }, c => weekdayFmt(c)],
+      ['day', 'Dia', CHOICES.day, {}, c => dayFmt(c)],
+      ['month', 'Mês', CHOICES.month, {}, c => monthFmt(c)],
+      ['year', 'Ano', CHOICES.year, { none: 'Sem' }, c => yearFmt(c)],
+      ['dOrder', 'Ordem', CHOICES.dOrder, {}, c => coreDateFmt({ ...c, dSep: '/', day: 'num0', month: 'num0', year: '4' })],
+      ['dSep', 'Separador', CHOICES.dSep, {}, c => coreDateFmt(c)],
+      ['week', 'Número da semana', [false, true], { false: 'Não' }, c => extrasFmt({ week: c.week }, lang)],
+      ['doy', 'Dia do ano', [false, true], { false: 'Não' }, c => extrasFmt({ doy: c.doy }, lang)],
+    ]],
+    ['Hora', [
+      ['timeOn', 'Mostrar a hora', [true, false], YN],
+      ['tWords', 'Números ou palavras', [false, true], {}, c => time(c)],
+      ['hour12', 'Formato 24 h ou 12 h', [false, true], {}, c => time(c, { tWords: false })],
+      ['secs', 'Segundos', [true, false], {}, c => time(c)],
+      ['tSep', 'Separador', CHOICES.tSep, {}, c => time(c, { tWords: false })],
+      ['hourPad', 'Zero na hora', [true, false], {}, c => time(c, { tWords: false, secs: false })],
+      ['ampm', 'AM / PM', [true, false], {}, c => time(c, { tWords: false, secs: false, hour12: true }),
+        c => c.hour12 && !c.tWords],
+    ]],
+    ['Composição', [
+      ['order', 'O que vem primeiro', CHOICES.order, { dt: 'Data, depois hora', td: 'Hora, depois data' }],
+      ['joiner', 'Entre data e hora', CHOICES.joiner, SEP_LABELS],
+    ]],
+    ['Estilo e posição', [
+      ['position', 'Posição do relógio', CHOICES.position, POS_LABELS],
+      ['pill', 'Fundo', CHOICES.pill, STYLE_LABELS],
+    ]],
+  ].map(([title, rows]) => [title, rows.map(([k, rt, vals, fixed, frag, ifc]) => ({ k, title: rt, vals, fixed, frag, ifc }))]);
+}
+
+function clockLabelClass(style) {
+  return style === 'plain' ? ['ecp-text'] : ['ecp-pill', PILL_CSS[style] ?? 'ecp-neutral'];
+}
+
+/** Barra de mentira (Atividades, relogio na posicao escolhida, icones) com o relogio ao vivo. */
+function miniBar(cfg, big) {
+  const lang = systemLang();
+  const bar = new Gtk.CenterBox({ css_classes: ['ecp-bar'], hexpand: true });
+  const act = new Gtk.Label({ label: big ? 'Atividades' : '▬', css_classes: ['ecp-pill', 'ecp-neutral'] });
+  const icons = new Gtk.Label({ label: big ? '◔  ⌁  ⏻' : '⏻', css_classes: ['ecp-dim'] });
+  const clock = new Gtk.Label({
+    css_classes: clockLabelClass(cfg.pill), ellipsize: Pango.EllipsizeMode.END,
+    max_width_chars: big ? 60 : 20, xalign: 0.5,
+  });
+  const start = new Gtk.Box({ spacing: 8 });
+  const end = new Gtk.Box({ spacing: 8 });
+  start.append(act);
+  end.append(icons);
+  if (cfg.position === 'left') start.append(clock);
+  else if (cfg.position === 'right') end.prepend(clock);
+  else bar.set_center_widget(clock);
+  bar.set_start_widget(start);
+  bar.set_end_widget(end);
+  const update = () => { clock.label = formatNow(buildFormat(cfg, lang)); };
+  update();
+  return { widget: bar, update };
+}
+
+function buildLabPage(settings) {
+  const lang = systemLang();
+  const page = new Adw.PreferencesPage({ title: 'Laboratório', icon_name: 'x-office-calendar-symbolic' });
+  let cfg = settings.get_string('lab-config')
+    ? parseCfg(settings.get_string('lab-config'))
+    : cleanCfg({ position: settings.get_string('clock-position') });
+  let dead = false;
+
+  // Aplica a configuracao: formato, intervalo, posicao e estilo do bloco de hora da barra.
+  const apply = next => {
+    cfg = cleanCfg(next);
+    const fmt = buildFormat(cfg, lang);
+    const secs = formatShowsSeconds(fmt);
+    settings.set_string('lab-config', JSON.stringify(cfg));
+    settings.set_string('format-string', fmt);
+    settings.set_int('update-interval', secs ? 1 : 60);
+    settings.set_boolean('smooth-second', secs);
+    settings.set_string('clock-position', cfg.position);
+    const list = cleanBar(settings.get_strv('bar-layout'));
+    const i = list.findIndex(s => parseBlock(s)?.kind === 'time');
+    const patch = { style: cfg.pill, payload: '' };
+    settings.set_strv('bar-layout', i >= 0 ? updateBlock(list, i, patch) : [serializeBlock({ kind: 'time', ...patch }), ...list]);
+    refresh();
+  };
+
+  // Previa grande
+  const gPrev = new Adw.PreferencesGroup({ title: 'Prévia', description: 'A barra do jeito que fica. As opções abaixo valem na hora.' });
+  const prevHolder = new Gtk.Box({ hexpand: true });
+  gPrev.add(prevHolder);
+  const driftRow = new Adw.ActionRow({ title: 'O formato foi editado à mão', subtitle: 'O relógio usa um formato diferente do que o laboratório monta.' });
+  const driftBtn = new Gtk.Button({ label: 'Usar o do laboratório', valign: Gtk.Align.CENTER });
+  driftBtn.connect('clicked', () => apply(cfg));
+  driftRow.add_suffix(driftBtn);
+  gPrev.add(driftRow);
+  page.add(gPrev);
+
+  // Galeria
+  const gGal = new Adw.PreferencesGroup({ title: 'Galeria de formatos', description: 'Toque num formato para usar. Cada cartão mostra a hora de agora.' });
+  const flow = new Gtk.FlowBox({ selection_mode: Gtk.SelectionMode.NONE, homogeneous: true, column_spacing: 8, row_spacing: 8, min_children_per_line: 2, max_children_per_line: 3, activate_on_single_click: true });
+  const cards = GALLERY.map(g => {
+    const mb = miniBar(g.cfg, false);
+    const box = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 });
+    box.append(mb.widget);
+    box.append(new Gtk.Label({ label: g.name, xalign: 0, css_classes: ['heading'] }));
+    box.append(new Gtk.Label({ label: g.hint, xalign: 0, wrap: true, css_classes: ['dim-label', 'caption'] }));
+    const btn = new Gtk.Button({ child: box, css_classes: ['flat', 'ecp-card'], tooltip_text: buildFormat(g.cfg, lang).replace(/\n/g, ' ') });
+    btn.connect('clicked', () => apply(g.cfg));
+    flow.append(btn);
+    return { g, mb, btn };
+  });
+  gGal.add(flow);
+  page.add(gGal);
+
+  // Controles
+  const spec = labSpec(lang);
+  const rows = [];
+  let updating = false;
+  for (const [title, items] of spec) {
+    const group = new Adw.PreferencesGroup({ title });
+    for (const it of items) {
+      const row = new Adw.ComboRow({ title: it.title });
+      row.connect('notify::selected', () => {
+        if (updating || dead) return;
+        const v = it.vals[row.selected];
+        if (v === undefined || v === cfg[it.k]) return;
+        // Trocar o modelo do ComboRow dentro do proprio sinal derruba o GTK; espera o sinal acabar.
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+          if (!dead) apply(withK(cfg, it.k, v));
+          return GLib.SOURCE_REMOVE;
+        });
+      });
+      group.add(row);
+      rows.push({ it, row });
+    }
+    page.add(group);
+  }
+
+  const labelFor = (it, v) => {
+    const fixed = it.fixed[String(v)];
+    if (fixed) return fixed;
+    const out = it.frag ? formatNow(it.frag(withK(cfg, it.k, v))) : String(v);
+    return (out || '—').replace(/\n/g, ' ');
+  };
+
+  function refresh() {
+    updating = true;
+    const prev = miniBar(cfg, true);
+    for (let c = prevHolder.get_first_child(); c;) { const n = c.get_next_sibling(); prevHolder.remove(c); c = n; }
+    prevHolder.append(prev.widget);
+    prevTick = prev.update;
+    driftRow.visible = buildFormat(cfg, lang) !== settings.get_string('format-string');
+    for (const { it, row } of rows) {
+      row.visible = !it.ifc || it.ifc(cfg);
+      row.model = Gtk.StringList.new(it.vals.map(v => labelFor(it, v)));
+      row.selected = Math.max(0, it.vals.indexOf(cfg[it.k]));
+    }
+    for (const c of cards) {
+      const on = sameCfg(c.g.cfg, cfg) && !driftRow.visible;
+      if (on) c.btn.add_css_class('ecp-card-on');
+      else c.btn.remove_css_class('ecp-card-on');
+    }
+    updating = false;
+  }
+  let prevTick = () => {};
+  const tick = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
+    prevTick();
+    for (const c of cards) c.mb.update();
+    return GLib.SOURCE_CONTINUE;
+  });
+  const id = settings.connect('changed::format-string', () => { if (!updating && !dead) driftRow.visible = buildFormat(cfg, lang) !== settings.get_string('format-string'); });
+  refresh();
+  return { page, dispose: () => { dead = true; GLib.source_remove(tick); settings.disconnect(id); } };
+}
+
 let cssLoaded = false;
 function loadCss() {
   if (cssLoaded) return;
@@ -252,10 +450,11 @@ function loadCss() {
   cssLoaded = true;
 }
 
-/** Cria as paginas "Barra" e "Popup". Devolve { pages, dispose } (dispose solta timers e sinais). */
+/** Cria as paginas "Laboratório" (labPage), "Barra" e "Popup". Devolve { labPage, pages, dispose } (dispose solta timers e sinais). */
 export function buildLabs(settings) {
   loadCss();
   const bar = buildBarPage(settings);
   const popup = buildPopupPage(settings);
-  return { pages: [bar.page, popup.page], dispose: () => { bar.dispose(); popup.dispose(); } };
+  const lab = buildLabPage(settings);
+  return { labPage: lab.page, pages: [bar.page, popup.page], dispose: () => { lab.dispose(); bar.dispose(); popup.dispose(); } };
 }

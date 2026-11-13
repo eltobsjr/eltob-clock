@@ -61,7 +61,33 @@ app.connect('activate', () => {
     s.reset('popup-col2');
     s.reset('popup-col3');
     ok('popup: restaurar o padrao', named(win, 'ec-card-row').length === 5);
+    // ── Laboratório (galeria e opções) ──────────────────────────────────
+    const cardOf = txt => findAll(win, x => x instanceof Gtk.Button && x.has_css_class('ecp-card')).find(b => findAll(b, l => l instanceof Gtk.Label && l.label === txt).length);
+    ok('lab: galeria com 16 formatos', findAll(win, x => x instanceof Gtk.Button && x.has_css_class('ecp-card')).length === 16);
+    s.reset('format-string'); s.reset('bar-layout'); s.reset('clock-position'); s.reset('lab-config');
+    cardOf('Por extenso').emit('clicked');
+    ok('lab: galeria grava o formato', s.get_string('format-string') === '%A, %-d de %B de %Y — %H:%M', s.get_string('format-string'));
+    ok('lab: sem segundos o relogio anda a cada minuto', s.get_int('update-interval') === 60 && !s.get_boolean('smooth-second'));
+    ok('lab: guarda as escolhas', JSON.parse(s.get_string('lab-config')).weekday === 'long');
+    cardOf('Só a hora').emit('clicked');
+    ok('lab: pilula vai para o bloco de hora da barra', s.get_strv('bar-layout')[0] === 'time|pill-blue|', s.get_strv('bar-layout')[0]);
+    cardOf('À esquerda').emit('clicked');
+    ok('lab: posicao grava', s.get_string('clock-position') === 'left');
+    cardOf('Padrão Eltob').emit('clicked');
+    ok('lab: volta ao padrao', s.get_string('format-string') === '%d/%m/%Y %H:%M:%S' && s.get_string('clock-position') === 'center' && s.get_strv('bar-layout')[0] === 'time|plain|', s.get_string('format-string'));
+    const mes = findAll(win, x => x instanceof Adw.ComboRow && x.title === 'Mês')[0];
+    mes.selected = 3;
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 200, () => {
+    ok('lab: escolher o mes por extenso', s.get_string('format-string').includes('%B'), s.get_string('format-string'));
+    cardOf('Hora em palavras').emit('clicked');
+    ok('lab: hora em palavras grava o marcador', s.get_string('format-string') === '{hora:extenso}', s.get_string('format-string'));
+    s.set_string('format-string', '%H:%M');
+    const drift = findAll(win, x => x instanceof Adw.ActionRow && x.title === 'O formato foi editado à mão')[0];
+    ok('lab: avisa quando o formato foi editado a mao', drift.visible);
+    s.reset('format-string'); s.reset('bar-layout'); s.reset('clock-position'); s.reset('lab-config');
     app.quit();
+    return GLib.SOURCE_REMOVE;
+    });
     return GLib.SOURCE_REMOVE;
   });
 });
