@@ -31,13 +31,13 @@ print(",".join(v) if isinstance(v, list) else v)' "$1"
 }
 
 version=$(src_meta version)
-zip="dist/numeric-clock@nickotmazgin.v${version}.shell-extension.zip"
+zip="dist/eltob-clock@eltobsjr.gmail.com.v${version}.shell-extension.zip"
 say "Checking $zip"
 [[ -f "$zip" ]] || { say "ERROR: $zip not found (run ./tools/build.sh)"; exit 1; }
 
 for f in metadata.json extension.js prefs.js presets.js stylesheet.css \
-         icons/numeric-clock-symbolic.svg \
-         schemas/org.gnome.shell.extensions.numeric-clock.gschema.xml; do
+         icons/eltob-clock-symbolic.svg \
+         schemas/org.gnome.shell.extensions.eltob-clock.gschema.xml; do
   check_zip_has "$zip" "$f"
 done
 for f in schemas/gschemas.compiled tools/build.sh .env; do

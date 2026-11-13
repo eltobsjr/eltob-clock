@@ -1,5 +1,5 @@
 // Test harness for tools/nested-smoke-test.sh — never shipped in the release zip.
-// Drives Numeric Clock inside an isolated nested GNOME Shell and logs "NCTEST" lines.
+// Drives Eltob Clock inside an isolated nested GNOME Shell and logs "NCTEST" lines.
 import GLib from 'gi://GLib';
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -7,7 +7,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const UUID = 'numeric-clock@nickotmazgin';
+const UUID = 'eltob-clock@eltobsjr.gmail.com';
 const L = (...a) => console.log('NCTEST', ...a);
 const wait = ms => new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
   r();
@@ -19,7 +19,7 @@ function ncSettings() {
   const ext = Main.extensionManager.lookup(UUID);
   const src = Gio.SettingsSchemaSource.new_from_directory(`${ext.path}/schemas`,
     Gio.SettingsSchemaSource.get_default(), false);
-  return new Gio.Settings({ settings_schema: src.lookup('org.gnome.shell.extensions.numeric-clock', false) });
+  return new Gio.Settings({ settings_schema: src.lookup('org.gnome.shell.extensions.eltob-clock', false) });
 }
 
 function check(name, ok, detail = '') {
@@ -31,7 +31,7 @@ async function run() {
   const s = ncSettings();
   const dm = Main.panel.statusArea.dateMenu;
   const clock = () => dm._clockDisplay.text;
-  const ind = () => Main.panel.statusArea['numeric-clock-access'];
+  const ind = () => Main.panel.statusArea['eltob-clock-access'];
 
   check('extension active', Main.extensionManager.lookup(UUID)?.state === 1);
   check('indicator present', !!ind());
@@ -111,8 +111,8 @@ async function run() {
     s.set_string('menu-style', style);
     await wait(50);
     const cls = ind().menu.actor.get_style_class_name();
-    check(`menu style ${style}`, cls.includes(`numeric-clock-style-${style}`) &&
-      ['light', 'dark', 'system'].filter(x => x !== style).every(x => !cls.includes(`numeric-clock-style-${x}`)), cls);
+    check(`menu style ${style}`, cls.includes(`eltob-clock-style-${style}`) &&
+      ['light', 'dark', 'system'].filter(x => x !== style).every(x => !cls.includes(`eltob-clock-style-${x}`)), cls);
   }
   const styleSub = ind().menu._getMenuItems().find(i => i.label?.text === 'Menu style');
   check('menu style submenu', styleSub?.menu._getMenuItems().length === 3);
@@ -136,9 +136,9 @@ async function run() {
 
   // About and Donate items
   const labels = ind().menu._getMenuItems().map(i => i.label?.text);
-  check('about and donate items', labels.includes('About Numeric Clock') && labels.includes('Donate'), JSON.stringify(labels));
+  check('about and donate items', labels.includes('About Eltob Clock') && labels.includes('Donate'), JSON.stringify(labels));
   prefsOpened = 0;
-  ind().menu._getMenuItems().find(i => i.label?.text === 'About Numeric Clock').activate(Clutter.get_current_event());
+  ind().menu._getMenuItems().find(i => i.label?.text === 'About Eltob Clock').activate(Clutter.get_current_event());
   check('about opens prefs on About page', prefsOpened === 1 && s.get_string('prefs-page') === 'about');
   s.reset('prefs-page');
 

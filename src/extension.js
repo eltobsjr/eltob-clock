@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Numeric Clock — GNOME 45+ (ESM)
+// Eltob Clock — GNOME 45+ (ESM)
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -59,9 +59,9 @@ function connectFirst(obj, signals, callback) {
 function copyTextToClipboard(text) {
   try {
     St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, String(text || ''));
-    Main.notify(_('Numeric Clock'), _('Time copied to clipboard'));
+    Main.notify(_('Eltob Clock'), _('Time copied to clipboard'));
   } catch (e) {
-    console.error('[Numeric Clock] clipboard error:', e);
+    console.error('[Eltob Clock] clipboard error:', e);
   }
 }
 
@@ -69,7 +69,7 @@ function openUri(uri) {
   try {
     Gio.AppInfo.launch_default_for_uri(uri, global.create_app_launch_context(0, -1));
   } catch (e) {
-    console.warn(`[Numeric Clock] could not open ${uri}: ${e.message}`);
+    console.warn(`[Eltob Clock] could not open ${uri}: ${e.message}`);
   }
 }
 
@@ -112,7 +112,7 @@ class Tooltip {
     const actor = this._actor;
     if (!actor.mapped || actor.menu?.isOpen)
       return;
-    this._label = new St.Label({ style_class: `dash-label numeric-clock-tooltip ${this.styleClass}`, text: this._textFn() });
+    this._label = new St.Label({ style_class: `dash-label eltob-clock-tooltip ${this.styleClass}`, text: this._textFn() });
     Main.uiGroup.add_child(this._label);
     const [x, y] = actor.get_transformed_position();
     const [w, h] = actor.get_transformed_size();
@@ -141,17 +141,17 @@ class Tooltip {
 const NumericClockIndicator = GObject.registerClass(
 class NumericClockIndicator extends PanelMenu.Button {
   _init(settings, extensionPath, openPrefs) {
-    super._init(0.0, _('Numeric Clock'));
-    this.add_style_class_name('numeric-clock-panel');
+    super._init(0.0, _('Eltob Clock'));
+    this.add_style_class_name('eltob-clock-panel');
     this._settings = settings;
     this._openPrefs = openPrefs;
     this._timeLabel = null;
     this._menuTimerId = 0;
 
-    const iconPath = GLib.build_filenamev([extensionPath, 'icons', 'numeric-clock-symbolic.svg']);
+    const iconPath = GLib.build_filenamev([extensionPath, 'icons', 'eltob-clock-symbolic.svg']);
     const icon = new St.Icon({
       gicon: Gio.Icon.new_for_string(iconPath),
-      style_class: 'system-status-icon numeric-clock-icon',
+      style_class: 'system-status-icon eltob-clock-icon',
     });
     this.add_child(icon);
     this._tooltip = new Tooltip(this, () => this._tooltipText());
@@ -172,7 +172,7 @@ class NumericClockIndicator extends PanelMenu.Button {
     const middle = this._settings.get_string('icon-middle-click');
     if (right !== 'menu') hint.push(`${_('Right-click')}: ${_(ACTION_LABELS[right])}`);
     if (middle !== 'menu') hint.push(`${_('Middle-click')}: ${_(ACTION_LABELS[middle])}`);
-    return `${_('Numeric Clock')} — ${formatNow(this._settings.get_string('format-string'))}\n${hint.join(' · ')}`;
+    return `${_('Eltob Clock')} — ${formatNow(this._settings.get_string('format-string'))}\n${hint.join(' · ')}`;
   }
 
   // Left-click always toggles the quick menu (PanelMenu.Button default);
@@ -208,13 +208,13 @@ class NumericClockIndicator extends PanelMenu.Button {
       copyTextToClipboard(formatNow(this._settings.get_string('format-string')));
   }
 
-  // System follows the shell theme; Light and Dark use Numeric Clock's own colors.
+  // System follows the shell theme; Light and Dark use Eltob Clock's own colors.
   _applyMenuStyle() {
     const style = this._settings.get_string('menu-style');
     for (const s of MENU_STYLES)
-      this.menu.actor.remove_style_class_name(`numeric-clock-style-${s}`);
-    this.menu.actor.add_style_class_name(`numeric-clock-style-${style}`);
-    this._tooltip.styleClass = style === 'system' ? '' : `numeric-clock-tooltip-${style}`;
+      this.menu.actor.remove_style_class_name(`eltob-clock-style-${s}`);
+    this.menu.actor.add_style_class_name(`eltob-clock-style-${style}`);
+    this._tooltip.styleClass = style === 'system' ? '' : `eltob-clock-tooltip-${style}`;
     for (const [s, item] of this._styleItems ?? [])
       item.setOrnament(s === style ? PopupMenu.Ornament.CHECK : PopupMenu.Ornament.NONE);
   }
@@ -282,7 +282,7 @@ class NumericClockIndicator extends PanelMenu.Button {
       item.connect('activate', () => {
         applyPresetToSettings(this._settings, preset);
         this._refreshMenuTime();
-        Main.notify(_('Numeric Clock'), `${_('Format preset applied')}: ${_(preset.label)}`);
+        Main.notify(_('Eltob Clock'), `${_('Format preset applied')}: ${_(preset.label)}`);
       });
       presets.menu.addMenuItem(item);
     }
@@ -307,7 +307,7 @@ class NumericClockIndicator extends PanelMenu.Button {
     this.menu.addMenuItem(prefsItem);
 
     // Preferences reads prefs-page once and opens on the About page.
-    const aboutItem = menuItemWithIcon(_('About Numeric Clock'), 'help-about-symbolic');
+    const aboutItem = menuItemWithIcon(_('About Eltob Clock'), 'help-about-symbolic');
     aboutItem.connect('activate', () => {
       this._settings.set_string('prefs-page', 'about');
       this._openPrefs();
@@ -349,10 +349,10 @@ export default class NumericClockExtension extends Extension {
         // openPreferences() returns a promise on GNOME 45+; it rejects when the
         // Extensions app cannot be reached.
         Promise.resolve(this.openPreferences())
-          .catch(e => console.warn(`[Numeric Clock] could not open Preferences: ${e.message}`));
+          .catch(e => console.warn(`[Eltob Clock] could not open Preferences: ${e.message}`));
       },
     );
-    Main.panel.addToStatusArea('numeric-clock-access', this._indicator, 1, 'right');
+    Main.panel.addToStatusArea('eltob-clock-access', this._indicator, 1, 'right');
 
     this._settingsChangedIds = [
       this._settings.connect('changed::format-string', () => this._updateAll()),

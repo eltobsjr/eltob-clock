@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <schema id="org.gnome.shell.extensions.numeric-clock" path="/org/gnome/shell/extensions/numeric-clock/">
+  <schema id="org.gnome.shell.extensions.eltob-clock" path="/org/gnome/shell/extensions/eltob-clock/">
     <key name="format-string" type="s">
       <default>'%d/%m/%Y %H:%M:%S'</default>
       <summary>Clock format</summary>
@@ -30,7 +30,7 @@
     <key name="clock-secondary-opens-menu" type="b">
       <default>true</default>
       <summary>Right-click clock for quick menu</summary>
-      <description>Right-click or middle-click the formatted top-bar clock to open the Numeric Clock quick menu. Left-click still opens the GNOME calendar.</description>
+      <description>Right-click or middle-click the formatted top-bar clock to open the Eltob Clock quick menu. Left-click still opens the GNOME calendar.</description>
     </key>
     <key name="menu-style" type="s">
       <choices>

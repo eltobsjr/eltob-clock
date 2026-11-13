@@ -14,8 +14,8 @@ FILES=(
   prefs.js
   presets.js
   stylesheet.css
-  icons/numeric-clock-symbolic.svg
-  schemas/org.gnome.shell.extensions.numeric-clock.gschema.xml
+  icons/eltob-clock-symbolic.svg
+  schemas/org.gnome.shell.extensions.eltob-clock.gschema.xml
 )
 
 have() { command -v "$1" >/dev/null 2>&1; }

@@ -1,7 +1,7 @@
 {
-  "name": "Numeric Clock",
+  "name": "Eltob Clock",
   "description": "Top-bar numeric clock for GNOME Shell 45–51: DD/MM/YYYY, ISO 8601, 24-hour or 12-hour time with optional seconds, using any strftime format.\n\n* 8 one-click presets and a live preview\n* Panel icon: click for the quick menu, right-click for Preferences, middle-click to copy the time\n* Menu style: System, Light or Dark\n* About and Donate right in the menu\n* Ticks exactly on the second\n* Restores the stock clock when disabled\n\nWayland & X11/Xorg. No network access.",
-  "uuid": "numeric-clock@nickotmazgin",
+  "uuid": "eltob-clock@eltobsjr.gmail.com",
   "shell-version": [
     "45",
     "46",
@@ -13,8 +13,8 @@
   ],
   "version": 32,
   "version-name": "17.7.0 45.51",
-  "settings-schema": "org.gnome.shell.extensions.numeric-clock",
-  "gettext-domain": "numeric-clock",
+  "settings-schema": "org.gnome.shell.extensions.eltob-clock",
+  "gettext-domain": "eltob-clock",
   "url": "https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clock",
   "donations": {
     "paypal": "nickotmazgin"

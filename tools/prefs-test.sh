@@ -5,7 +5,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/numeric-clock-prefs.XXXXXX")"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/eltob-clock-prefs.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/ext" "$WORK/config"
 

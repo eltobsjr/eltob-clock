@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Numeric Clock prefs — GNOME 45+ (ESM)
+// Eltob Clock prefs — GNOME 45+ (ESM)
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
@@ -13,7 +13,7 @@ import {
 const REPO_URL = 'https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clock';
 const DONATE_URL = 'https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW';
 const EMAIL = 'nickotmazgin.dev@gmail.com';
-const AUTHOR = 'Nick Otmazgin';
+const AUTHOR = 'Nick Otmazgin (original), fork de Eltob';
 const SETTING_KEYS = [
   'format-string', 'update-interval', 'only-topbar', 'smooth-second',
   'show-panel-icon', 'clock-secondary-opens-menu',
@@ -223,7 +223,7 @@ export default class NumericClockPrefs extends ExtensionPreferences {
       row.add_css_class('property');
       groupInfo.add(row);
     };
-    infoRow(_('Name'), metadata.name || 'Numeric Clock');
+    infoRow(_('Name'), metadata.name || 'Eltob Clock');
     infoRow(_('Version'), metadata['version-name'] || String(metadata.version ?? ''));
     infoRow(_('Developer'), AUTHOR);
     infoRow(_('Description'),
@@ -246,7 +246,7 @@ export default class NumericClockPrefs extends ExtensionPreferences {
 
     window.add(pageSettings);
     window.add(pageAbout);
-    // "About Numeric Clock" in the quick menu asks for the About page.
+    // "About Eltob Clock" in the quick menu asks for the About page.
     if (settings.get_string('prefs-page') === 'about') {
       window.set_visible_page(pageAbout);
       settings.reset('prefs-page');
