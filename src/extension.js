@@ -20,7 +20,6 @@ import { BarPills } from './barpills.js';
 const CLOCK_NAME_RE = /(^|[-_\s])clock([-_\s]|$)/i;
 const CLOCK_TEXT_RE = /^[\p{L}\p{N}\s,./-]{0,24}?\d{1,2}‎?[:∶]\d{2}(‎?[:∶]\d{2})?(\s?[ap]\.?m\.?)?$/iu;
 const RESCAN_TICKS = 5;
-const DONATE_URL = 'https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW';
 const STYLE_CLASS = { system: '', light: 'ec-style-light', dark: 'ec-style-dark' };
 
 function looksLikeClock(lab) {
@@ -52,14 +51,6 @@ function connectFirst(obj, signals, callback) {
       return obj.connect(sig, callback);
   }
   return 0;
-}
-
-function openUri(uri) {
-  try {
-    Gio.AppInfo.launch_default_for_uri(uri, global.create_app_launch_context(0, -1));
-  } catch (e) {
-    console.warn(`[Eltob Clock] nao abriu ${uri}: ${e.message}`);
-  }
 }
 
 export default class EltobClockExtension extends Extension {
@@ -157,7 +148,6 @@ export default class EltobClockExtension extends Extension {
       copyTime,
       openPrefs,
       openAbout,
-      openDonate: () => openUri(DONATE_URL),
       onPresetApplied: p => Main.notify('Eltob Clock', `Formato aplicado: ${p.label}`),
     });
     dm._messageList.get_parent().add_child(this._column.actor);

@@ -12,7 +12,6 @@ import {
 
 const REPO_URL = 'https://github.com/eltobsjr/eltob-clock';
 const UPSTREAM_URL = 'https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clock';
-const DONATE_URL = 'https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW';
 const AUTHOR = 'Nick Otmazgin (original), fork de Eltob';
 const SETTING_KEYS = [
   'format-string', 'update-interval', 'only-topbar', 'smooth-second', 'menu-style',
@@ -245,7 +244,6 @@ export default class EltobClockPrefs extends ExtensionPreferences {
     addLinkRow(_('Repositório do Eltob Clock'), REPO_URL);
     addLinkRow(_('Reportar um problema'), `${REPO_URL}/issues`);
     addLinkRow(_('Numeric Clock original (Nick Otmazgin)'), UPSTREAM_URL);
-    addLinkRow(_('Apoiar o autor original (PayPal)'), DONATE_URL);
     pageAbout.add(groupLinks);
 
     window.add(pageSettings);

@@ -155,7 +155,7 @@ class StopwatchCard {
 }
 
 class ActionsCard {
-  constructor({ settings, copyTime, openPrefs, openAbout, openDonate, onPresetApplied }) {
+  constructor({ settings, copyTime, openPrefs, openAbout, onPresetApplied }) {
     this._settings = settings;
     this.actor = card('Eltob Clock');
     this._grid = new St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL, style_class: 'ec-col-gap' });
@@ -177,12 +177,11 @@ class ActionsCard {
     const pairs = [
       [add('edit-copy-symbolic', 'Copiar hora', copyTime), this._btnPresets],
       [this._btnStyle, add('preferences-system-symbolic', 'Preferências', openPrefs)],
-      [add('help-about-symbolic', 'Sobre', openAbout), add('emblem-favorite-symbolic', 'Apoiar autor', openDonate)],
+      [add('help-about-symbolic', 'Sobre', openAbout)],
     ];
-    for (const [a, b] of pairs) {
+    for (const items of pairs) {
       const row = new St.BoxLayout({ style_class: 'ec-row', x_expand: true });
-      row.add_child(a);
-      row.add_child(b);
+      for (const b of items) row.add_child(b);
       this._grid.add_child(row);
     }
     this.actor.add_child(this._grid);
@@ -258,7 +257,7 @@ class ActionsCard {
 }
 
 export class PopupColumn {
-  constructor({ settings, state, copyTime, openPrefs, openAbout, openDonate, onPresetApplied }) {
+  constructor({ settings, state, copyTime, openPrefs, openAbout, onPresetApplied }) {
     this._settings = settings;
     this.actor = new St.BoxLayout({
       style_class: 'ec-col',
@@ -275,7 +274,7 @@ export class PopupColumn {
 
     this._timer = new TimerCard(state);
     this._stopwatch = new StopwatchCard(state);
-    this._actions = new ActionsCard({ settings, copyTime, openPrefs, openAbout, openDonate, onPresetApplied });
+    this._actions = new ActionsCard({ settings, copyTime, openPrefs, openAbout, onPresetApplied });
     this.actor.add_child(this._timer.actor);
     this.actor.add_child(this._stopwatch.actor);
     this.actor.add_child(this._actions.actor);

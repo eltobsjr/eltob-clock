@@ -21,7 +21,7 @@ O Eltob Clock roda dentro do GNOME Shell, na sua sessão, e é local.
 
 ## Terceiros
 
-Os botões do popup que abrem páginas (por exemplo, apoiar o autor original) só abrem quando você clica.
+As preferências têm links para o repositório e para o projeto original; só abrem quando você clica.
 
 ## Dúvidas
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.1 — 2026-11-13
+
+- **Removido:** o botão "Apoiar autor" do popup e o link de doação das preferências. O crédito ao autor original continua no README, no LICENSE e na página Sobre.
+
 ## v1.0.0 — 2026-11-13 (fork Eltob Clock)
 
 Primeira versão do fork do Numeric Clock v17.7.0.
