@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.0 — 2026-11-13
+
+**Barra e popup configuráveis, com transições suaves.**
+
+- **Barra por blocos:** hora ou data com formato próprio, timer, cronômetro, clima e texto livre, cada um em texto ou pílula, na ordem escolhida. Segundos em qualquer bloco fazem o relógio andar a cada segundo.
+- **Layout do popup editável:** mostrar, esconder, ordenar, mover entre a coluna do meio e a da direita e escolher tamanho normal ou compacto para cada cartão.
+- **Editor nas preferências:** páginas **Barra** (com prévia ao vivo) e **Popup**, com botões para mover, esconder, remover e restaurar o padrão.
+- **Transições suaves:** pílulas da barra, listas de presets e estilos, controles do timer e conteúdo do clima aparecem e somem com animação; o popup acompanha. Respeita "reduzir animações" do GNOME.
+- Novas opções no GSettings: `bar-layout`, `popup-col2` e `popup-col3`. Saíram `bar-pills`, `weather-enabled` e `weather-bar-pill` (viraram parte do layout; layout padrão = comportamento da v1.0).
+- Testes: layout (13) e timer (9) em node, preferências com o editor (16 verificações) e smoke test no GNOME 50 isolado com blocos, layout, tamanhos e animações. Novo `tools/prefs-shots.sh`.
+- Corrigido: aviso do Clutter ao desligar o shell com a extensão ativa.
+
 ## v1.0.1 — 2026-11-13
 
 - **Removido:** o botão "Apoiar autor" do popup e o link de doação das preferências. O crédito ao autor original continua no README, no LICENSE e na página Sobre.
