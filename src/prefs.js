@@ -9,13 +9,14 @@ import {
   FORMAT_PRESETS, MAX_FORMAT_LENGTH, applyPresetToSettings,
   formatNow, formatShowsSeconds, isValidFormat,
 } from './presets.js';
+import { buildLabs } from './labs.js';
 
 const REPO_URL = 'https://github.com/eltobsjr/eltob-clock';
 const UPSTREAM_URL = 'https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clock';
 const AUTHOR = 'Nick Otmazgin (original), fork de Eltob';
 const SETTING_KEYS = [
   'format-string', 'update-interval', 'only-topbar', 'smooth-second', 'menu-style',
-  'bar-pills', 'timer-sound', 'weather-enabled', 'weather-auto-location', 'weather-bar-pill',
+  'timer-sound', 'weather-auto-location', 'bar-layout', 'popup-col2', 'popup-col3',
 ];
 const CHEATSHEET = [
   ['%d / %m / %Y', 'Day · month · year (22 / 10 / 2026)'],
@@ -159,9 +160,6 @@ export default class EltobClockPrefs extends ExtensionPreferences {
     pageSettings.add(groupLook);
 
     const groupTimer = new Adw.PreferencesGroup({ title: _('Timer e cronômetro') });
-    groupTimer.add(switchRow(settings, 'bar-pills',
-      _('Pílulas na barra'),
-      _('Mostra o timer e o cronômetro ao lado do relógio enquanto estiverem ativos')));
     groupTimer.add(switchRow(settings, 'timer-sound',
       _('Som ao terminar'),
       _('Toca o som "complete" do sistema, além da notificação')));
@@ -169,17 +167,11 @@ export default class EltobClockPrefs extends ExtensionPreferences {
 
     const groupWeather = new Adw.PreferencesGroup({
       title: _('Clima'),
-      description: _('Usa o serviço de clima do próprio GNOME (libgweather). A extensão não faz chamadas de rede nem guarda a sua localização.'),
+      description: _('Usa o serviço de clima do próprio GNOME (libgweather). A extensão não faz chamadas de rede nem guarda a sua localização. O cartão e a pílula do clima são ligados nas páginas Popup e Barra.'),
     });
-    groupWeather.add(switchRow(settings, 'weather-enabled',
-      _('Cartão de clima no popup'),
-      _('Temperatura, previsão por hora, sensação, vento e umidade')));
     groupWeather.add(switchRow(settings, 'weather-auto-location',
       _('Localização automática'),
       _('Liga a localização automática do clima do GNOME (GeoClue). Exige Serviços de localização ativos em Configurações, Privacidade.')));
-    groupWeather.add(switchRow(settings, 'weather-bar-pill',
-      _('Temperatura na barra'),
-      _('Pílula com o ícone e a temperatura ao lado do relógio')));
     pageSettings.add(groupWeather);
 
     const groupPresets = new Adw.PreferencesGroup({
@@ -246,7 +238,9 @@ export default class EltobClockPrefs extends ExtensionPreferences {
     addLinkRow(_('Numeric Clock original (Nick Otmazgin)'), UPSTREAM_URL);
     pageAbout.add(groupLinks);
 
+    const labs = buildLabs(settings);
     window.add(pageSettings);
+    for (const pg of labs.pages) window.add(pg);
     window.add(pageAbout);
     // O botão "Sobre" do popup pede a página Sobre.
     if (settings.get_string('prefs-page') === 'about') {
@@ -284,6 +278,7 @@ export default class EltobClockPrefs extends ExtensionPreferences {
     window.connect('close-request', () => {
       if (previewTimer) GLib.source_remove(previewTimer);
       previewTimer = 0;
+      labs.dispose();
       for (const id of settingsIds)
         settings.disconnect(id);
       return false;

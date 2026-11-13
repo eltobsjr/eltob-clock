@@ -1,6 +1,6 @@
 {
   "name": "Eltob Clock",
-  "description": "Relógio da barra do GNOME com formato livre, mais timer, cronômetro e clima no popup.\n\n* Formato strftime livre com prévia e 8 presets\n* Timer e cronômetro no popup, com pílulas na barra e aviso ao terminar\n* Clima do próprio GNOME (libgweather + GeoClue), sem rede nem localização guardadas pela extensão\n* Visual da família Eltob Indicator (Catppuccin Macchiato)\n\nFork do Numeric Clock (MIT, Nick Otmazgin). Wayland e X11.",
+  "description": "Relógio da barra do GNOME configurável: você escolhe os blocos da barra e o layout do popup.\n\n* Barra por blocos: hora ou data com formato strftime próprio, timer, cronômetro, clima e texto livre, em texto ou pílula\n* Popup com timer, cronômetro e clima; cartões que você mostra, esconde, ordena e deixa compactos\n* Transições suaves quando o popup ou os cartões mudam de tamanho\n* Clima do próprio GNOME (libgweather + GeoClue), sem rede nem localização guardadas pela extensão\n* Visual da família Eltob Indicator (Catppuccin Macchiato)\n\nFork do Numeric Clock (MIT, Nick Otmazgin). Wayland e X11.",
   "uuid": "eltob-clock@eltobsjr.gmail.com",
   "shell-version": [
     "45",
@@ -11,8 +11,8 @@
     "50",
     "51"
   ],
-  "version": 34,
-  "version-name": "1.0.1 45.51",
+  "version": 35,
+  "version-name": "1.1.0 45.51",
   "settings-schema": "org.gnome.shell.extensions.eltob-clock",
   "gettext-domain": "eltob-clock",
   "url": "https://github.com/eltobsjr/eltob-clock"

@@ -32,30 +32,30 @@
       <summary>Menu style</summary>
       <description>Quick menu and tooltip appearance: follow the shell theme (system), or always light or dark.</description>
     </key>
-    <key name="bar-pills" type="b">
-      <default>true</default>
-      <summary>Pills in the top bar</summary>
-      <description>Show the running timer and stopwatch as small pills next to the clock.</description>
+    <key name="bar-layout" type="as">
+      <default>['time|plain|', 'stopwatch|pill-blue|', 'timer|auto|', 'weather|pill-neutral|temp']</default>
+      <summary>Top bar blocks, in order</summary>
+      <description>Each entry is "kind|style|payload". Kinds: time (payload = strftime format; empty uses the global format), timer, stopwatch, weather (payload: temp, full or icon), text (payload = the text). Styles: plain, pill-neutral, pill-blue, pill-green, pill-yellow, pill-red, and auto (timer only).</description>
+    </key>
+    <key name="popup-col2" type="as">
+      <default>['weather|normal']</default>
+      <summary>Popup cards under the calendar</summary>
+      <description>Each entry is "id|size". Ids: clock, timer, stopwatch, weather, actions. Sizes: normal, compact. A card that is in no column is hidden.</description>
+    </key>
+    <key name="popup-col3" type="as">
+      <default>['clock|normal', 'timer|normal', 'stopwatch|normal', 'actions|normal']</default>
+      <summary>Popup cards in the right column</summary>
+      <description>Same format as popup-col2.</description>
     </key>
     <key name="timer-sound" type="b">
       <default>true</default>
       <summary>Timer sound</summary>
       <description>Play the system "complete" sound when a timer ends, besides the notification.</description>
     </key>
-    <key name="weather-enabled" type="b">
-      <default>true</default>
-      <summary>Weather card</summary>
-      <description>Show the weather card in the clock popup, using GNOME's own weather service (libgweather).</description>
-    </key>
     <key name="weather-auto-location" type="b">
       <default>true</default>
       <summary>Automatic location</summary>
       <description>Turn on GNOME's automatic weather location (GeoClue) when the extension starts. Needs Location Services enabled in Settings, Privacy.</description>
-    </key>
-    <key name="weather-bar-pill" type="b">
-      <default>true</default>
-      <summary>Temperature pill in the top bar</summary>
-      <description>Show the current temperature as a pill next to the clock.</description>
     </key>
     <key name="prefs-page" type="s">
       <choices>

@@ -58,8 +58,12 @@
 .ec-chip-value { font-size: 0.9em; font-weight: 700; }
 
 /* ---- Pilulas na barra ---- */
-.ec-pills { spacing: 6px; margin-left: 8px; }
-.ec-pill { font-size: 0.78em; font-weight: 700; border-radius: 100px; padding: 1px 8px; font-feature-settings: "tnum"; }
+.ec-bar { spacing: 6px; }
+.ec-bar-plain { }
+.ec-compact-time { font-size: 1.25em; font-weight: 800; font-feature-settings: "tnum"; min-width: 70px; }
+.ec-head-compact .ec-clock { font-size: 1.15em; }
+.ec-weather-body { spacing: 8px; }
+.ec-pill { font-size: 0.78em; font-weight: 700; border-radius: 100px; padding: 1px 8px; margin: 0 2px; font-feature-settings: "tnum"; }
 .ec-pill-wx { spacing: 4px; }
 .ec-pill-ok { background-color: rgba(166, 218, 149, 0.18); color: #a6da95; }
 .ec-pill-warn { background-color: rgba(238, 212, 159, 0.18); color: #eed49f; }

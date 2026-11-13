@@ -38,8 +38,7 @@ function findByClass(root, cls) {
   return out;
 }
 
-
-// Capturas de tela para conferir o visual (so quando EC_SHOT_DIR esta definido). O clima usa dados de exemplo.
+// ── Capturas de tela (so com EC_SHOT_DIR); o clima usa dados de exemplo ───────
 async function snap(path) {
   const stream = Gio.File.new_for_path(path).replace(null, false, Gio.FileCreateFlags.NONE, null);
   await new Shell.Screenshot().screenshot(false, stream);
@@ -74,34 +73,41 @@ function fakeWeatherClient() {
 
 async function visualShots(s, dm, inst) {
   const dir = GLib.getenv('EC_SHOT_DIR');
-  const ext = Main.extensionManager.lookup(UUID);
-  const { WeatherCard } = await import(`file://${ext.path}/weatherview.js`);
   const st = inst()._state;
   const now = () => Math.floor(GLib.get_real_time() / 1000);
-
-  inst()._weatherCard?.destroy();
-  inst()._weatherCard = new WeatherCard(fakeWeatherClient());
-  dm._displaysSection.get_parent().add_child(inst()._weatherCard.actor);
+  const fake = fakeWeatherClient();
+  inst()._popup._ctx.client = fake;
+  inst()._bar._client = fake;
   s.set_string('format-string', '%d/%m/%Y %H:%M:%S');
-
-  // timer a 45% e cronometro correndo, para ver as pilulas e o anel
   st.tm = { state: 'running', durationMs: 600000, endsAt: now() + 272000, remainingMs: 600000 };
   st.sw = { running: false, startedAt: 0, accumulated: 754000 };
+  inst()._popup._build(false);
+  inst()._bar._rebuild();
   st._changed();
-  inst()._pills._client = inst()._client;
-  Main.panel.statusArea.dateMenu.menu.open();
+  dm.menu.open();
   await wait(900);
   await snap(`${dir}/popup-aberto.png`);
-  inst()._column._actions._toggleSub('presets');
-  await wait(300);
+
+  inst()._popup.find(inst()._mods.ActionsCard)._toggleSub('presets');
+  await wait(500);
   await snap(`${dir}/popup-presets.png`);
-  inst()._column._actions._toggleSub('presets');
-  // timer quase no fim (vermelho)
+  inst()._popup.find(inst()._mods.ActionsCard)._toggleSub('presets');
+  await wait(400);
+
   st.tm = { state: 'running', durationMs: 600000, endsAt: now() + 40000, remainingMs: 600000 };
   st._changed();
   await wait(400);
   await snap(`${dir}/popup-timer-vermelho.png`);
+
+  // Layout personalizado: barra com blocos proprios e cartoes compactos em outra ordem
+  s.set_strv('bar-layout', ['time|plain|%a %d/%m', 'time|pill-blue|%H:%M', 'text|plain|•', 'timer|auto|', 'stopwatch|pill-green|', 'weather|pill-neutral|full']);
+  s.set_strv('popup-col2', ['timer|compact', 'weather|normal']);
+  s.set_strv('popup-col3', ['clock|compact', 'stopwatch|compact', 'actions|compact']);
+  await wait(700);
+  await snap(`${dir}/popup-personalizado.png`);
   dm.menu.close();
+  await wait(300);
+  for (const k of ['bar-layout', 'popup-col2', 'popup-col3']) s.reset(k);
   await wait(300);
   st.tmCancel();
   st.swReset();
@@ -115,12 +121,19 @@ async function run() {
   const clock = () => dm._clockDisplay.text;
   const inst = () => Main.extensionManager.lookup(UUID)?.stateObj;
   const hbox = () => dm._messageList.get_parent();
+  const ext = Main.extensionManager.lookup(UUID);
+  const mods = await import(`file://${ext.path}/popup.js`);
+  const weatherMod = await import(`file://${ext.path}/weatherview.js`);
+  inst()._mods = { ...mods, ...weatherMod };
+  const M = inst()._mods;
+  const blocks = () => inst()._bar._blocks;
+  const block = kind => blocks().find(b => b.spec.kind === kind);
 
   check('extensao ativa', Main.extensionManager.lookup(UUID)?.state === 1);
 
-  // ── Texto do relogio (herdado do Numeric Clock) ────────────────────
+  // ── Texto do relogio (herdado do Numeric Clock): o rotulo original continua sendo reescrito ──
   const first = clock();
-  check('formato padrao', /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/.test(first), first);
+  check('formato padrao no rotulo original', /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/.test(first), first);
   await wait(1100);
   check('tique a cada segundo', clock() !== first, `${first} -> ${clock()}`);
 
@@ -145,88 +158,130 @@ async function run() {
   check('texto puro (sem markup)', clock() === fmt('<b>%H</b>') && !ct.use_markup, clock());
   s.set_string('format-string', '%d/%m/%Y %H:%M:%S');
 
-  // ── Popup: terceira coluna e secoes nativas ────────────────────────
-  const cols = findByClass(hbox(), 'ec-col');
-  check('terceira coluna no popup', cols.length === 1, `n=${cols.length}`);
+  // ── Barra: composicao por blocos ───────────────────────────────────
+  check('rotulo original escondido', !dm._clockDisplay.visible);
+  check('compositor na barra', findByClass(dm, 'ec-bar').length === 1);
+  check('blocos padrao', blocks().map(b => b.spec.kind).join() === 'time,stopwatch,timer,weather', blocks().map(b => b.spec.kind).join());
+  check('bloco de hora usa o formato global', block('time').actor.text === fmt('%d/%m/%Y %H:%M:%S'), block('time').actor.text);
+  check('bloco de hora tem a fonte do relogio', block('time').actor.has_style_class_name('clock'));
+  check('pilulas comecam escondidas', !block('timer').actor.visible && !block('stopwatch').actor.visible);
+
+  s.set_strv('bar-layout', ['time|plain|%a %d/%m', 'text|plain|•', 'time|pill-blue|%H:%M']);
+  await wait(100);
+  check('barra personalizada: 3 blocos', blocks().length === 3, blocks().map(b => b.spec.kind).join());
+  check('hora com formato proprio', blocks()[0].actor.text === fmt('%a %d/%m'), blocks()[0].actor.text);
+  check('texto livre', blocks()[1].actor.text === '•');
+  check('hora em pilula azul', blocks()[2].actor.has_style_class_name('ec-pill-blue') && blocks()[2].actor.text === fmt('%H:%M'), blocks()[2].actor.style_class);
+  s.set_strv('bar-layout', ['lixo', 'x|y|z']);
+  await wait(100);
+  check('layout invalido volta ao padrao', blocks().map(b => b.spec.kind).join() === 'time,stopwatch,timer,weather');
+
+  // segundos num bloco forcam tique de 1 s mesmo com intervalo grande
+  s.set_int('update-interval', 60);
+  s.set_boolean('smooth-second', false);
+  s.set_strv('bar-layout', ['time|plain|%H:%M:%S']);
+  await wait(300);
+  const t0 = blocks()[0].actor.text;
+  await wait(1500);
+  check('segundos no bloco: tique de 1 s', blocks()[0].actor.text !== t0, `${t0} -> ${blocks()[0].actor.text}`);
+  s.reset('update-interval');
+  s.reset('smooth-second');
+  s.reset('bar-layout');
+  await wait(200);
+
+  // ── Popup: colunas montadas pelo layout ───────────────────────────
+  check('terceira coluna no popup', findByClass(hbox(), 'ec-col').length === 1);
   check('eventos e relogios mundiais escondidos', !dm._displaysSection.visible);
-  check('cartao de clima abaixo do calendario', findByClass(dm._displaysSection.get_parent(), 'ec-weather').length === 1);
-  check('pilulas na barra criadas', findByClass(dm, 'ec-pills').length === 1);
-  const st = inst()._state;
-  const pills = inst()._pills;
+  check('clima abaixo do calendario', findByClass(dm._displaysSection.get_parent(), 'ec-weather').length === 1);
+  const col3 = () => findByClass(hbox(), 'ec-col')[0];
+  check('cartoes padrao da coluna', inst()._popup._cards.map(c => c.constructor.name).join() === 'WeatherCard,ClockCard,TimerCard,StopwatchCard,ActionsCard',
+    inst()._popup._cards.map(c => c.constructor.name).join());
 
   dm.menu.open();
   await wait(400);
   check('popup abre', dm.menu.isOpen);
-  check('hora formatada na coluna', inst()._column._clock.text.length > 0, inst()._column._clock.text);
+  check('hora formatada no cartao', inst()._popup.find(M.ClockCard)._clock.text.length > 0);
+
+  // layout: mover, esconder, compactar
+  s.set_strv('popup-col2', []);
+  s.set_strv('popup-col3', ['weather|compact', 'timer|compact']);
+  await wait(300);
+  check('clima foi para a coluna da direita', inst()._popup.find(M.WeatherCard).actor.get_parent() === col3());
+  check('cartoes escondidos somem', !inst()._popup.find(M.ClockCard) && !inst()._popup.find(M.ActionsCard) && !inst()._popup.find(M.StopwatchCard));
+  check('timer compacto sem anel', inst()._popup.find(M.TimerCard)._compact === true && !inst()._popup.find(M.TimerCard)._ring.actor.get_parent());
+  s.set_strv('popup-col3', []);
+  await wait(200);
+  check('coluna vazia some', !col3().visible);
+  s.set_strv('popup-col2', ['weather|normal', 'weather|compact', 'zzz|normal']);
+  await wait(200);
+  check('repetidos e invalidos ignorados', inst()._popup._cards.length === 1);
+  s.reset('popup-col2');
+  s.reset('popup-col3');
+  await wait(300);
+  check('layout restaurado', inst()._popup._cards.length === 5 && col3().visible);
 
   // ── Timer ──────────────────────────────────────────────────────────
-  check('timer inicia ocioso', st.tm.state === 'idle' && !pills._tm.visible);
+  const st = inst()._state;
+  check('timer inicia ocioso', st.tm.state === 'idle' && !block('timer').actor.visible);
   st.tmStart(1);
-  await wait(200);
-  check('timer em andamento', st.tm.state === 'running' && pills._tm.visible && /⏳ 01:00/.test(pills._tm.text), pills._tm.text);
-  check('timer verde', pills._tm.style_class.includes('ec-pill-ok'), pills._tm.style_class);
+  await wait(500);
+  check('timer em andamento', st.tm.state === 'running' && block('timer').actor.visible && /⏳ 01:00/.test(block('timer').actor.text), block('timer').actor.text);
+  check('pilula revelada por completo', block('timer').actor.width > 20 && block('timer').actor.opacity === 255, `w=${block('timer').actor.width} op=${block('timer').actor.opacity}`);
+  check('timer verde', block('timer').actor.style_class.includes('ec-pill-ok'), block('timer').actor.style_class);
   st.tmPauseResume();
   await wait(100);
-  check('timer pausado', st.tm.state === 'paused' && /⏸/.test(pills._tm.text), pills._tm.text);
+  check('timer pausado', st.tm.state === 'paused' && /⏸/.test(block('timer').actor.text), block('timer').actor.text);
   st.tmPauseResume();
   await wait(100);
   check('timer retomado', st.tm.state === 'running');
   st.tmCancel();
-  await wait(100);
-  check('timer cancelado', st.tm.state === 'idle' && !pills._tm.visible);
-  // fim do timer: 700 ms
+  await wait(500);
+  check('timer cancelado: pilula some animada', st.tm.state === 'idle' && !block('timer').actor.visible);
   st.tm = { state: 'running', durationMs: 700, endsAt: Math.floor(GLib.get_real_time() / 1000) + 700, remainingMs: 700 };
   st._changed();
-  await wait(1800);
-  check('timer termina sozinho', st.tm.state === 'idle' && !pills._tm.visible);
+  await wait(2000);
+  check('timer termina sozinho', st.tm.state === 'idle' && !block('timer').actor.visible);
 
   // ── Cronometro ─────────────────────────────────────────────────────
-  check('cronometro inicia zerado', !st.sw.running && !pills._sw.visible);
+  check('cronometro inicia zerado', !st.sw.running && !block('stopwatch').actor.visible);
   st.swToggle();
-  await wait(1300);
-  check('cronometro conta', st.sw.running && pills._sw.visible && /⏱ 00:0[1-3]/.test(pills._sw.text), pills._sw.text);
+  await wait(1500);
+  check('cronometro conta', st.sw.running && block('stopwatch').actor.visible && /⏱ 00:0[1-3]/.test(block('stopwatch').actor.text), block('stopwatch').actor.text);
   st.swToggle();
   const frozen = st.swElapsed();
   await wait(700);
-  check('cronometro pausa', !st.sw.running && st.swElapsed() === frozen && /⏸/.test(pills._sw.text), pills._sw.text);
+  check('cronometro pausa', !st.sw.running && st.swElapsed() === frozen && /⏸/.test(block('stopwatch').actor.text));
   st.swReset();
-  await wait(100);
-  check('cronometro zera', st.swElapsed() === 0 && !pills._sw.visible);
-  s.set_boolean('bar-pills', false);
-  st.swToggle();
-  await wait(100);
-  check('pilulas desligadas escondem', !pills._sw.visible);
-  st.swReset();
-  s.set_boolean('bar-pills', true);
+  await wait(500);
+  check('cronometro zera', st.swElapsed() === 0 && !block('stopwatch').actor.visible);
 
-  // ── Acoes: presets e estilo ────────────────────────────────────────
-  const actions = inst()._column._actions;
+  // ── Acoes: presets e estilo, com transicao ────────────────────────
+  const actions = inst()._popup.find(M.ActionsCard);
   actions._toggleSub('presets');
-  check('lista de presets', actions._sub.get_n_children() === 8 && actions._scroll.visible, `n=${actions._sub.get_n_children()}`);
+  await wait(500);
+  check('lista de presets abre', actions._sub.get_n_children() === 8 && actions._scroll.visible && actions._scroll.height > 0, `h=${actions._scroll.height}`);
+  check('lista com altura limitada', actions._scroll.height <= 200, `h=${actions._scroll.height}`);
   actions._sub.get_child_at_index(1).emit('clicked', 0);
-  await wait(100);
-  check('preset aplicado', s.get_string('format-string') === '%A %d/%m/%Y %H:%M:%S', s.get_string('format-string'));
+  await wait(500);
+  check('preset aplicado e lista fechada', s.get_string('format-string') === '%A %d/%m/%Y %H:%M:%S' && !actions._scroll.visible, s.get_string('format-string'));
   s.reset('format-string');
   actions._toggleSub('style');
+  await wait(400);
   check('lista de estilos', actions._sub.get_n_children() === 3 && actions._scroll.visible);
   for (const style of ['light', 'dark', 'system']) {
     s.set_string('menu-style', style);
     await wait(50);
-    const cls = inst()._column.actor.get_style_class_name();
+    const cls = col3().get_style_class_name();
     const others = ['light', 'dark'].filter(x => x !== style);
     check(`estilo ${style}`, (style === 'system' || cls.includes(`ec-style-${style}`)) && others.every(x => !cls.includes(`ec-style-${x}`)), cls);
   }
   actions._closeSub();
+  await wait(400);
+  check('lista de estilos fecha animada', !actions._scroll.visible);
 
   // ── Clima ──────────────────────────────────────────────────────────
-  const wc = inst()._weatherCard;
-  check('cartao de clima com conteudo', !!wc && wc.actor.get_n_children() >= 2, `filhos=${wc?.actor.get_n_children()}`);
-  s.set_boolean('weather-enabled', false);
-  await wait(100);
-  check('clima desligavel', !inst()._weatherCard && findByClass(dm._displaysSection.get_parent(), 'ec-weather').length === 0);
-  s.set_boolean('weather-enabled', true);
-  await wait(100);
-  check('clima religavel', !!inst()._weatherCard);
+  const wc = inst()._popup.find(M.WeatherCard);
+  check('cartao de clima com conteudo', !!wc && wc._body.get_n_children() >= 2, `filhos=${wc?._body.get_n_children()}`);
 
   dm.menu.close();
   await wait(300);
@@ -243,23 +298,23 @@ async function run() {
   // ── Desativar devolve tudo; reativar refaz ─────────────────────────
   await Main.extensionManager.disableExtension(UUID);
   await wait(300);
-  check('desativar restaura o relogio', clock() === dm._clock.clock, `${clock()} vs ${dm._clock.clock}`);
+  check('desativar restaura o relogio', clock() === dm._clock.clock && dm._clockDisplay.visible, `${clock()} vs ${dm._clock.clock}`);
   check('coluna removida', findByClass(hbox(), 'ec-col').length === 0);
-  check('pilulas removidas', findByClass(dm, 'ec-pills').length === 0);
+  check('compositor removido', findByClass(dm, 'ec-bar').length === 0);
   check('cartao de clima removido', findByClass(dm._displaysSection.get_parent(), 'ec-weather').length === 0);
   check('secoes nativas de volta', dm._displaysSection.visible === Main.sessionMode.allowSettings);
   await Main.extensionManager.enableExtension(UUID);
-  await wait(400);
-  check('reativar refaz a coluna', findByClass(hbox(), 'ec-col').length === 1 && /^\d{2}\/\d{2}\/\d{4}/.test(clock()), clock());
+  await wait(500);
+  check('reativar refaz a coluna e a barra', findByClass(hbox(), 'ec-col').length === 1 && findByClass(dm, 'ec-bar').length === 1);
 
   for (let i = 0; i < 3; i++) {
     await Main.extensionManager.disableExtension(UUID);
     await Main.extensionManager.enableExtension(UUID);
   }
-  await wait(300);
+  await wait(400);
   check('ciclos de ativar/desativar',
     Main.extensionManager.lookup(UUID)?.state === 1 &&
-    findByClass(hbox(), 'ec-col').length === 1 && findByClass(dm, 'ec-pills').length === 1);
+    findByClass(hbox(), 'ec-col').length === 1 && findByClass(dm, 'ec-bar').length === 1);
   L('DONE');
 }
 

@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: MIT
-// Terceira coluna do popup do relogio: hora formatada, timer, cronometro e acoes.
+// Popup do relogio: cartoes (hora, timer, cronometro, acoes; o clima fica em weatherview.js) e o
+// PopupLayout, que monta as colunas conforme o layout escolhido nas preferencias.
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { FORMAT_PRESETS, applyPresetToSettings, formatNow } from './presets.js';
-import { TIMER_PRESET_MINUTES, formatDuration } from './timerlogic.js';
+import { TIMER_PRESET_MINUTES, formatDuration, timerLevel } from './timerlogic.js';
+import { cleanCols, parseCard } from './layoutlogic.js';
+import { WeatherCard } from './weatherview.js';
+import { collapseV, fadeIn, revealV, setShown } from './anim.js';
 
 export const MENU_STYLES = [['system', 'Padrão'], ['light', 'Claro'], ['dark', 'Escuro']];
+export { timerLevel };
 
 const RING_COLORS = { ok: [166, 218, 149], warn: [238, 212, 159], crit: [237, 135, 150], idle: [128, 135, 162] };
-
-/** Cor do timer pela fracao restante: verde, amarelo (<=25%), vermelho (<=10%). */
-export function timerLevel(fraction) {
-  if (fraction <= 0.1) return 'crit';
-  if (fraction <= 0.25) return 'warn';
-  return 'ok';
-}
 
 function hms(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -36,7 +35,65 @@ function card(title, grow = false) {
   return c;
 }
 
-// Anel de progresso do timer (cairo), com o tempo escrito no centro.
+function setStyle(actor, cls) {
+  for (const c of ['ec-style-light', 'ec-style-dark'])
+    actor.remove_style_class_name(c);
+  if (cls) actor.add_style_class_name(cls);
+}
+
+// Base dos cartoes: guarda o estado vivo e a assinatura de mudancas.
+class Card {
+  constructor() {
+    this._unsub = null;
+  }
+
+  setStyleClass(cls) { setStyle(this.actor, cls); }
+  update() {}
+  onOpen() {}
+  onClose() {}
+
+  destroy() {
+    this._unsub?.();
+    this.onClose();
+    this.actor.destroy();
+  }
+}
+
+// ── Hora formatada ──────────────────────────────────────────────────
+class ClockCard extends Card {
+  constructor(settings, size) {
+    super();
+    this._settings = settings;
+    this.actor = new St.BoxLayout({ style_class: `ec-row ec-head ${size === 'compact' ? 'ec-head-compact' : ''}`.trim(), x_expand: true });
+    this._clock = new St.Label({ style_class: 'ec-clock', x_expand: true, y_align: Clutter.ActorAlign.CENTER });
+    this.actor.add_child(this._clock);
+    this._id = 0;
+    this.update();
+  }
+
+  update() {
+    this._clock.text = formatNow(this._settings.get_string('format-string'));
+  }
+
+  onOpen() {
+    this.update();
+    if (!this._id) {
+      this._id = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
+        this.update();
+        return GLib.SOURCE_CONTINUE;
+      });
+    }
+  }
+
+  onClose() {
+    if (this._id) {
+      GLib.source_remove(this._id);
+      this._id = 0;
+    }
+  }
+}
+
+// ── Anel de progresso (cairo) ───────────────────────────────────────
 class Ring {
   constructor(size) {
     this.actor = new St.Widget({ layout_manager: new Clutter.BinLayout(), style_class: 'ec-ring' });
@@ -75,17 +132,25 @@ class Ring {
   }
 }
 
-class TimerCard {
-  constructor(state) {
+// ── Timer ───────────────────────────────────────────────────────────
+class TimerCard extends Card {
+  constructor(state, size) {
+    super();
     this._state = state;
-    this.actor = card('Timer', true);
-    const body = new St.BoxLayout({ style_class: 'ec-row ec-timer-body', y_expand: true, y_align: Clutter.ActorAlign.CENTER });
-    this._ring = new Ring(76);
-    body.add_child(this._ring.actor);
+    this._compact = size === 'compact';
+    this.actor = card('Timer', !this._compact);
+
+    const body = new St.BoxLayout({ style_class: 'ec-row ec-timer-body', y_expand: !this._compact, y_align: Clutter.ActorAlign.CENTER });
+    this._ring = new Ring(this._compact ? 0 : 76);
+    if (!this._compact) body.add_child(this._ring.actor);
+    else {
+      this._cTime = new St.Label({ style_class: 'ec-compact-time', y_align: Clutter.ActorAlign.CENTER });
+      body.add_child(this._cTime);
+    }
     const right = new St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.CENTER, style_class: 'ec-col-gap' });
     this._info = new St.Label({ style_class: 'ec-dim ec-small' });
     this._info.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-    right.add_child(this._info);
+    if (!this._compact) right.add_child(this._info);
     this._buttons = new St.BoxLayout({ style_class: 'ec-row' });
     this._pause = button('Pausar', '', () => state.tmPauseResume());
     this._cancel = button('Cancelar', '', () => state.tmCancel());
@@ -103,45 +168,65 @@ class TimerCard {
       return [m, b];
     });
     this.actor.add_child(this._chipRow);
+    this._unsub = state.connectChange(() => this.update());
     this.update();
   }
 
   update() {
     const s = this._state;
     const t = s.tm;
-    if (t.state === 'idle') {
+    const idle = t.state === 'idle';
+    const shown = idle ? '00:00' : formatDuration(s.tmRemainingShown());
+    if (idle) {
       this._ring.set(0, 'idle', '00:00');
       this._info.text = 'Escolha uma duração';
-      this._buttons.hide();
     } else {
       const frac = s.tmFraction();
-      this._ring.set(frac, t.state === 'paused' ? 'idle' : timerLevel(frac), formatDuration(s.tmRemainingShown()));
+      this._ring.set(frac, t.state === 'paused' ? 'idle' : timerLevel(frac), shown);
       const mins = Math.round(t.durationMs / 60000);
       this._info.text = t.state === 'paused'
         ? `pausado · de ${mins} min`
         : `de ${mins} min · termina ${GLib.DateTime.new_from_unix_local(Math.floor(t.endsAt / 1000)).format('%H:%M')}`;
       this._pause.label = t.state === 'paused' ? 'Retomar' : 'Pausar';
-      this._buttons.show();
     }
+    if (this._cTime) this._cTime.text = shown;
+    setShown(this._buttons, !idle);
+    if (this._compact) setShown(this._chipRow, idle);
     for (const [m, b] of this._chips) {
-      if (t.state !== 'idle' && Math.round(t.durationMs / 60000) === m) b.add_style_pseudo_class('checked');
+      if (!idle && Math.round(t.durationMs / 60000) === m) b.add_style_pseudo_class('checked');
       else b.remove_style_pseudo_class('checked');
     }
   }
 }
 
-class StopwatchCard {
-  constructor(state) {
+// ── Cronometro ──────────────────────────────────────────────────────
+class StopwatchCard extends Card {
+  constructor(state, size) {
+    super();
     this._state = state;
-    this.actor = card('Cronômetro', true);
-    this._time = new St.Label({ style_class: 'ec-sw-time', x_align: Clutter.ActorAlign.CENTER, y_expand: true, y_align: Clutter.ActorAlign.CENTER });
-    this.actor.add_child(this._time);
-    const row = new St.BoxLayout({ style_class: 'ec-row' });
+    this._compact = size === 'compact';
+    this.actor = card('Cronômetro', !this._compact);
+    this._time = new St.Label({
+      style_class: this._compact ? 'ec-compact-time' : 'ec-sw-time',
+      x_align: this._compact ? Clutter.ActorAlign.START : Clutter.ActorAlign.CENTER,
+      y_expand: !this._compact,
+      y_align: Clutter.ActorAlign.CENTER,
+    });
     this._toggle = button('Iniciar', 'ec-btn-primary', () => state.swToggle());
     this._reset = button('Zerar', '', () => state.swReset());
-    row.add_child(this._toggle);
-    row.add_child(this._reset);
-    this.actor.add_child(row);
+    const row = new St.BoxLayout({ style_class: 'ec-row', x_expand: true, y_align: Clutter.ActorAlign.CENTER });
+    if (this._compact) {
+      row.add_child(this._time);
+      row.add_child(this._toggle);
+      row.add_child(this._reset);
+      this.actor.add_child(row);
+    } else {
+      this.actor.add_child(this._time);
+      row.add_child(this._toggle);
+      row.add_child(this._reset);
+      this.actor.add_child(row);
+    }
+    this._unsub = state.connectChange(() => this.update());
     this.update();
   }
 
@@ -154,32 +239,36 @@ class StopwatchCard {
   }
 }
 
-class ActionsCard {
-  constructor({ settings, copyTime, openPrefs, openAbout, onPresetApplied }) {
+// ── Acoes ───────────────────────────────────────────────────────────
+class ActionsCard extends Card {
+  constructor({ settings, copyTime, openPrefs, openAbout, onPresetApplied, size }) {
+    super();
     this._settings = settings;
+    this._compact = size === 'compact';
     this.actor = card('Eltob Clock');
     this._grid = new St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL, style_class: 'ec-col-gap' });
-    this._rows = [];
     const add = (icon, text, onClick, chevron = false) => {
       const b = new St.Button({ style_class: 'ec-act', can_focus: true, x_expand: true });
       const box = new St.BoxLayout({ x_expand: true, style_class: 'ec-act-box' });
+      if (this._compact) box.x_align = Clutter.ActorAlign.CENTER;
       box.add_child(new St.Icon({ icon_name: icon, icon_size: 14, style_class: 'ec-act-ic' }));
-      const l = new St.Label({ text, style_class: 'ec-act-label', x_expand: true, y_align: Clutter.ActorAlign.CENTER });
-      l.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-      box.add_child(l);
-      if (chevron) box.add_child(new St.Icon({ icon_name: 'pan-end-symbolic', icon_size: 12, style_class: 'ec-act-chev' }));
+      if (!this._compact) {
+        const l = new St.Label({ text, style_class: 'ec-act-label', x_expand: true, y_align: Clutter.ActorAlign.CENTER });
+        l.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        box.add_child(l);
+        if (chevron) box.add_child(new St.Icon({ icon_name: 'pan-end-symbolic', icon_size: 12, style_class: 'ec-act-chev' }));
+      }
       b.child = box;
       b.connect('clicked', onClick);
       return b;
     };
-    this._btnPresets = add('document-edit-symbolic', 'Presets', () => this._toggleSub('presets'), true);
-    this._btnStyle = add('applications-graphics-symbolic', 'Estilo', () => this._toggleSub('style'), true);
-    const pairs = [
-      [add('edit-copy-symbolic', 'Copiar hora', copyTime), this._btnPresets],
-      [this._btnStyle, add('preferences-system-symbolic', 'Preferências', openPrefs)],
-      [add('help-about-symbolic', 'Sobre', openAbout)],
-    ];
-    for (const items of pairs) {
+    const copy = add('edit-copy-symbolic', 'Copiar hora', copyTime);
+    const presets = add('document-edit-symbolic', 'Presets', () => this._toggleSub('presets'), true);
+    const style = add('applications-graphics-symbolic', 'Estilo', () => this._toggleSub('style'), true);
+    const prefs = add('preferences-system-symbolic', 'Preferências', openPrefs);
+    const about = add('help-about-symbolic', 'Sobre', openAbout);
+    const rows = this._compact ? [[copy, presets, style], [prefs, about]] : [[copy, presets], [style, prefs], [about]];
+    for (const items of rows) {
       const row = new St.BoxLayout({ style_class: 'ec-row', x_expand: true });
       for (const b of items) row.add_child(b);
       this._grid.add_child(row);
@@ -207,16 +296,24 @@ class ActionsCard {
       this._closeSub();
       return;
     }
+    const wasOpen = this._open !== null;
     this._open = which;
     this._sub.destroy_all_children();
     if (which === 'presets') this._fillPresets();
     else this._fillStyles();
-    this._scroll.show();
+    if (wasOpen) this._scroll.show();
+    else revealV(this._scroll);
   }
 
-  _closeSub() {
+  _closeSub(animate = true) {
+    if (this._open === null) return;
     this._open = null;
-    this._scroll.hide();
+    if (animate) collapseV(this._scroll);
+    else this._scroll.hide();
+  }
+
+  onOpen() {
+    this._closeSub(false);
   }
 
   _item(text, sample, checked, onClick) {
@@ -256,74 +353,114 @@ class ActionsCard {
   }
 }
 
-export class PopupColumn {
-  constructor({ settings, state, copyTime, openPrefs, openAbout, onPresetApplied }) {
+function makeCard(id, size, ctx) {
+  switch (id) {
+    case 'clock': return new ClockCard(ctx.settings, size);
+    case 'timer': return new TimerCard(ctx.state, size);
+    case 'stopwatch': return new StopwatchCard(ctx.state, size);
+    case 'weather': return new WeatherCard(ctx.client, size);
+    case 'actions': return new ActionsCard({ ...ctx.actions, settings: ctx.settings, size });
+    default: return null;
+  }
+}
+
+/**
+ * Monta as colunas extras do popup nativo a partir de popup-col2 (abaixo do calendario) e popup-col3
+ * (coluna nova a direita). Reconstroi sozinho quando o layout muda nas preferencias.
+ */
+export class PopupLayout {
+  constructor({ dateMenu, settings, state, client, actions }) {
+    this._dm = dateMenu;
     this._settings = settings;
-    this.actor = new St.BoxLayout({
-      style_class: 'ec-col',
-      orientation: Clutter.Orientation.VERTICAL,
-      y_expand: true,
+    this._ctx = { settings, state, client, actions };
+    this._cards = [];
+    this._styleClass = '';
+    this._open = false;
+
+    this._hbox = dateMenu._messageList.get_parent();
+    this._col2Host = dateMenu._displaysSection.get_parent();
+    this._col3 = new St.BoxLayout({ style_class: 'ec-col', orientation: Clutter.Orientation.VERTICAL, y_expand: true });
+    this._hbox.add_child(this._col3);
+
+    // Eventos e relogios mundiais nativos saem; o clima nativo e trocado pelo nosso cartao.
+    this._visId = dateMenu._displaysSection.connect('notify::visible', () => {
+      if (dateMenu._displaysSection.visible) dateMenu._displaysSection.hide();
     });
+    dateMenu._displaysSection.hide();
 
-    const head = new St.BoxLayout({ style_class: 'ec-row ec-head', x_expand: true });
-    this._clock = new St.Label({ style_class: 'ec-clock', x_expand: true, y_align: Clutter.ActorAlign.CENTER });
-    head.add_child(this._clock);
-    this._fmtHint = new St.Label({ style_class: 'ec-dim ec-tiny', y_align: Clutter.ActorAlign.CENTER });
-    head.add_child(this._fmtHint);
-    this.actor.add_child(head);
+    this._ids = ['changed::popup-col2', 'changed::popup-col3'].map(sig => settings.connect(sig, () => this._build(true)));
+    this._build(false);
+  }
 
-    this._timer = new TimerCard(state);
-    this._stopwatch = new StopwatchCard(state);
-    this._actions = new ActionsCard({ settings, copyTime, openPrefs, openAbout, onPresetApplied });
-    this.actor.add_child(this._timer.actor);
-    this.actor.add_child(this._stopwatch.actor);
-    this.actor.add_child(this._actions.actor);
+  _layout() {
+    return cleanCols(this._settings.get_strv('popup-col2'), this._settings.get_strv('popup-col3'));
+  }
 
-    this._unsub = state.connectChange(() => this.updateState());
-    this._clockId = 0;
-    this.refreshClock();
+  _clear() {
+    for (const c of this._cards) c.destroy();
+    this._cards = [];
+  }
+
+  _build(animate) {
+    this._clear();
+    const [c2, c3] = this._layout();
+    const add = (list, host) => {
+      for (const s of list) {
+        const spec = parseCard(s);
+        const c = makeCard(spec.id, spec.size, this._ctx);
+        if (!c) continue;
+        c.setStyleClass(this._styleClass);
+        host.add_child(c.actor);
+        this._cards.push(c);
+        if (animate) fadeIn(c.actor);
+        if (this._open) c.onOpen();
+      }
+    };
+    add(c2, this._col2Host);
+    add(c3, this._col3);
+    this._col3.visible = c3.length > 0;
   }
 
   setStyleClass(cls) {
-    for (const c of ['ec-style-light', 'ec-style-dark'])
-      this.actor.remove_style_class_name(c);
-    if (cls) this.actor.add_style_class_name(cls);
+    this._styleClass = cls;
+    setStyle(this._col3, cls);
+    for (const c of this._cards) c.setStyleClass(cls);
   }
 
-  refreshClock() {
-    const fmt = this._settings.get_string('format-string');
-    this._clock.text = formatNow(fmt);
-    this._fmtHint.text = '';
-  }
-
-  updateState() {
-    this._timer.update();
-    this._stopwatch.update();
-  }
-
-  /** Chamado quando o popup abre: mostra a hora viva e reinicia a lista de acoes. */
   onOpen() {
-    this.refreshClock();
-    this.updateState();
-    this._actions._closeSub();
-    if (!this._clockId) {
-      this._clockId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
-        this.refreshClock();
-        return GLib.SOURCE_CONTINUE;
-      });
+    this._open = true;
+    for (const c of this._cards) {
+      c.update();
+      c.onOpen();
     }
   }
 
   onClose() {
-    if (this._clockId) {
-      GLib.source_remove(this._clockId);
-      this._clockId = 0;
+    this._open = false;
+    for (const c of this._cards) c.onClose();
+  }
+
+  /** Atualiza a hora das caixas que mostram a hora formatada (ex.: depois de mudar o formato). */
+  refreshClock() {
+    for (const c of this._cards) {
+      if (c instanceof ClockCard) c.update();
     }
   }
 
+  /** Ajuda os testes: primeiro cartao do tipo dado. */
+  find(Type) {
+    return this._cards.find(c => c instanceof Type) ?? null;
+  }
+
   destroy() {
-    this.onClose();
-    this._unsub?.();
-    this.actor.destroy();
+    for (const id of this._ids) this._settings.disconnect(id);
+    this._ids = [];
+    this._clear();
+    this._dm._displaysSection.disconnect(this._visId);
+    this._col3.destroy();
+    // Devolve as secoes nativas (eventos, relogios mundiais, clima).
+    this._dm._displaysSection.visible = Main.sessionMode.allowSettings;
   }
 }
+
+export { ClockCard, TimerCard, StopwatchCard, ActionsCard };

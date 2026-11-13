@@ -70,4 +70,13 @@ t('barSuffix', () => {
   assert.equal(L.barSuffix(sw, tm, 30000), '⏳ 01:00  ⏱ 00:30');
 });
 
+t('timerLevel', () => {
+  assert.equal(L.timerLevel(1), 'ok');
+  assert.equal(L.timerLevel(0.26), 'ok');
+  assert.equal(L.timerLevel(0.25), 'warn');
+  assert.equal(L.timerLevel(0.11), 'warn');
+  assert.equal(L.timerLevel(0.1), 'crit');
+  assert.equal(L.timerLevel(0), 'crit');
+});
+
 console.log(`TIMERLOGIC TEST PASSED (${n})`);

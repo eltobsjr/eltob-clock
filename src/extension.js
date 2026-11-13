@@ -9,11 +9,10 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { WeatherClient } from 'resource:///org/gnome/shell/misc/weather.js';
-import { formatNow } from './presets.js';
+import { formatNow, formatShowsSeconds } from './presets.js';
 import { ClockState } from './clockstate.js';
-import { PopupColumn } from './popup.js';
-import { WeatherCard } from './weatherview.js';
-import { BarPills } from './barpills.js';
+import { PopupLayout } from './popup.js';
+import { BarComposer } from './barcomposer.js';
 
 // Labels fora do DateMenu da barra so sao tomados quando parecem um relogio inteiro
 // ("qua 13:17", "22/10 1:17 PM") ou tem classe/nome "clock". O relogio do GNOME escreve "13‎∶24".
@@ -62,15 +61,18 @@ export default class EltobClockExtension extends Extension {
     this._ticks = 0;
     this._rescanIdleId = 0;
     this._applying = false;
-    this._column = null;
+    this._popup = null;
+    this._bar = null;
 
     this._attachPopup();
 
     this._settingsChangedIds = [
       this._settings.connect('changed::format-string', () => {
         this._updateAll();
-        this._column?.refreshClock();
+        this._popup?.refreshClock();
+        this._restartTimer();
       }),
+      this._settings.connect('changed::bar-layout', () => this._restartTimer()),
       this._settings.connect('changed::update-interval', () => this._restartTimer()),
       this._settings.connect('changed::smooth-second', () => this._restartTimer()),
       this._settings.connect('changed::only-topbar', () => {
@@ -79,7 +81,6 @@ export default class EltobClockExtension extends Extension {
         this._restartTimer();
       }),
       this._settings.connect('changed::menu-style', () => this._applyStyle()),
-      this._settings.connect('changed::weather-enabled', () => this._syncWeatherCard()),
       this._settings.connect('changed::weather-auto-location', () => this._syncAutoLocation()),
     ];
     // Filhos do stage vem e vao com paineis e docks; olhar de novo quando ocioso.
@@ -142,34 +143,29 @@ export default class EltobClockExtension extends Extension {
       openPrefs();
     };
 
-    this._column = new PopupColumn({
+    this._popup = new PopupLayout({
+      dateMenu: dm,
       settings: this._settings,
       state: this._state,
-      copyTime,
-      openPrefs,
-      openAbout,
-      onPresetApplied: p => Main.notify('Eltob Clock', `Formato aplicado: ${p.label}`),
+      client: this._client,
+      actions: {
+        copyTime,
+        openPrefs,
+        openAbout,
+        onPresetApplied: p => Main.notify('Eltob Clock', `Formato aplicado: ${p.label}`),
+      },
     });
-    dm._messageList.get_parent().add_child(this._column.actor);
-
-    // Eventos e relogios mundiais saem; o clima nativo e trocado pelo nosso cartao (abaixo do calendario).
-    this._displaysVisibleId = dm._displaysSection.connect('notify::visible', () => {
-      if (dm._displaysSection.visible)
-        dm._displaysSection.hide();
-    });
-    dm._displaysSection.hide();
-    this._syncWeatherCard();
 
     this._menuOpenId = dm.menu.connect('open-state-changed', (_menu, open) => {
       if (open) {
         this._client.update();
-        this._column.onOpen();
+        this._popup.onOpen();
       } else {
-        this._column.onClose();
+        this._popup.onClose();
       }
     });
 
-    this._pills = new BarPills(dm, this._state, this._client, this._settings);
+    this._bar = new BarComposer(dm, this._state, this._client, this._settings);
     this._applyStyle();
   }
 
@@ -177,35 +173,15 @@ export default class EltobClockExtension extends Extension {
     const dm = this._dm;
     if (!dm) return;
     if (this._menuOpenId) dm.menu.disconnect(this._menuOpenId);
-    if (this._displaysVisibleId) dm._displaysSection.disconnect(this._displaysVisibleId);
     this._menuOpenId = 0;
-    this._displaysVisibleId = 0;
-    this._pills?.destroy();
-    this._pills = null;
-    this._weatherCard?.destroy();
-    this._weatherCard = null;
-    this._column?.destroy();
-    this._column = null;
+    this._bar?.destroy();
+    this._bar = null;
+    this._popup?.destroy();
+    this._popup = null;
     this._state?.destroy();
     this._state = null;
-    // Devolve as secoes nativas (eventos, relogios, clima).
-    dm._displaysSection.visible = Main.sessionMode.allowSettings;
     if (this._ownsClient) this._client = null;
     this._dm = null;
-  }
-
-  _syncWeatherCard() {
-    const dm = this._dm;
-    if (!dm) return;
-    const want = this._settings.get_boolean('weather-enabled');
-    if (want && !this._weatherCard) {
-      this._weatherCard = new WeatherCard(this._client);
-      dm._displaysSection.get_parent().add_child(this._weatherCard.actor);
-      this._applyStyle();
-    } else if (!want && this._weatherCard) {
-      this._weatherCard.destroy();
-      this._weatherCard = null;
-    }
   }
 
   // Liga a localizacao automatica do clima do GNOME (GeoClue) quando o usuario pede.
@@ -222,8 +198,7 @@ export default class EltobClockExtension extends Extension {
 
   _applyStyle() {
     const cls = STYLE_CLASS[this._settings.get_string('menu-style')] ?? '';
-    this._column?.setStyleClass(cls);
-    this._weatherCard?.setStyleClass(cls);
+    this._popup?.setStyleClass(cls);
   }
 
   // ── Texto do relogio da barra ─────────────────────────────────────
@@ -239,7 +214,7 @@ export default class EltobClockExtension extends Extension {
     if (this._settings.get_boolean('only-topbar'))
       return out;
     const skip = new Set([Main.messageTray]);
-    if (this._column) skip.add(this._column.actor);
+    if (this._popup?._col3) skip.add(this._popup._col3);
     if (dm?.menu?.actor)
       skip.add(dm.menu.actor);
     for (const lab of stageLabels(skip)) {
@@ -273,7 +248,8 @@ export default class EltobClockExtension extends Extension {
     ct.set_use_markup(false);
     // O shell reescreve o texto do relogio no horario dele; coloca o nosso de volta.
     entry.textId = ct.connect('notify::text', () => {
-      if (!this._applying)
+      // Sem palco = o rotulo esta sendo destruido (desligar o shell); nao mexer.
+      if (!this._applying && lab.get_stage())
         this._apply(lab);
     });
     entry.destroyId = lab.connect('destroy', () => this._labels?.delete(lab));
@@ -309,6 +285,7 @@ export default class EltobClockExtension extends Extension {
     if (this._ticks++ % RESCAN_TICKS === 0 || this._labels.size === 0)
       this._scan();
     this._updateAll();
+    this._bar?.update();
   }
 
   _clearTimer() {
@@ -322,7 +299,9 @@ export default class EltobClockExtension extends Extension {
     this._clearTimer();
     this._ticks = 0;
     this._tick();
-    const sec = Math.max(1, this._settings.get_int('update-interval'));
+    // Se algum bloco de hora da barra mostra segundos, o relogio anda a cada segundo.
+    const wantsSeconds = this._bar?.showsSeconds(formatShowsSeconds) ?? false;
+    const sec = wantsSeconds ? 1 : Math.max(1, this._settings.get_int('update-interval'));
     if (this._settings.get_boolean('smooth-second'))
       this._scheduleAligned(sec);
     else

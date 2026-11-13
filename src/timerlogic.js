@@ -92,3 +92,10 @@ export function barSuffix(sw, t, now) {
     parts.push(`⏱ ${formatDuration(stopwatchElapsed(sw, now))}${sw.running ? '' : ' ⏸'}`);
   return parts.join('  ');
 }
+
+/** Nivel de alerta pela fracao restante: ok, warn (<=25%) ou crit (<=10%). */
+export function timerLevel(fraction) {
+  if (fraction <= 0.1) return 'crit';
+  if (fraction <= 0.25) return 'warn';
+  return 'ok';
+}

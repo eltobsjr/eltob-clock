@@ -17,7 +17,10 @@ FILES=(
   clockstate.js
   popup.js
   weatherview.js
-  barpills.js
+  barcomposer.js
+  layoutlogic.js
+  labs.js
+  anim.js
   stylesheet.css
   icons/eltob-clock-symbolic.svg
   schemas/org.gnome.shell.extensions.eltob-clock.gschema.xml

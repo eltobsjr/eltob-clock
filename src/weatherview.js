@@ -6,6 +6,7 @@ import GLib from 'gi://GLib';
 import GWeather from 'gi://GWeather';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
+import { fadeIn } from './anim.js';
 
 const MAX_HOURS = 5;
 
@@ -25,7 +26,7 @@ export function weatherPillData(client) {
     const info = client.info;
     if (!info?.is_valid()) return null;
     const temp = tempText(info);
-    return temp ? { icon: info.get_symbolic_icon_name(), temp } : null;
+    return temp ? { icon: info.get_symbolic_icon_name(), temp, conditions: clean(info.get_conditions() || info.get_sky()) } : null;
   } catch {
     return null;
   }
@@ -70,14 +71,18 @@ function label(text, styleClass) {
 }
 
 export class WeatherCard {
-  constructor(client, styleClass = '') {
+  constructor(client, size = 'normal') {
     this._client = client;
+    this._compact = size === 'compact';
     this.actor = new St.BoxLayout({
-      style_class: `ec-card ec-weather ${styleClass}`.trim(),
+      style_class: 'ec-card ec-weather',
       orientation: Clutter.Orientation.VERTICAL,
       x_expand: true,
       y_expand: true,
     });
+    this._body = new St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL, x_expand: true, y_expand: true, style_class: 'ec-weather-body' });
+    this.actor.add_child(this._body);
+    this._lastKey = null;
     this._changedId = client.connect('changed', () => this.refresh());
     this.refresh();
   }
@@ -88,31 +93,45 @@ export class WeatherCard {
     if (cls) this.actor.add_style_class_name(cls);
   }
 
-  refresh() {
-    this.actor.destroy_all_children();
-    const c = this._client;
-    this.actor.add_child(this._header());
+  update() {}
+  onOpen() {}
+  onClose() {}
 
-    if (!c.available) {
+  // Estado atual do clima como uma chave curta: o conteudo so reaparece com fade quando ela muda.
+  _stateKey() {
+    const c = this._client;
+    if (!c.available) return 'sem-app';
+    if (!c.hasLocation) return 'sem-local';
+    if (c.loading) return 'carregando';
+    return c.info?.is_valid() ? 'ok' : (c.info?.network_error() ? 'sem-rede' : 'indisponivel');
+  }
+
+  refresh() {
+    this._body.destroy_all_children();
+    const c = this._client;
+    const key = this._stateKey();
+    this._body.add_child(this._header());
+
+    if (key === 'sem-app') {
       this._message('O GNOME Weather não está instalado.');
-      return;
-    }
-    if (!c.hasLocation) {
+    } else if (key === 'sem-local') {
       this._message('Sem local definido para o clima.', 'Escolher local…', () => c.activateApp());
-      return;
-    }
-    if (c.loading) {
+    } else if (key === 'carregando') {
       this._message('Carregando…');
-      return;
+    } else if (key === 'sem-rede') {
+      this._message('Sem rede para buscar o clima.');
+    } else if (key === 'indisponivel') {
+      this._message('Clima indisponível agora.');
+    } else {
+      const info = c.info;
+      this._current(info);
+      if (!this._compact) {
+        this._hourly(info);
+        this._chips(info);
+      }
     }
-    const info = c.info;
-    if (!info?.is_valid()) {
-      this._message(info?.network_error() ? 'Sem rede para buscar o clima.' : 'Clima indisponível agora.');
-      return;
-    }
-    this._current(info);
-    this._hourly(info);
-    this._chips(info);
+    if (key !== this._lastKey) fadeIn(this._body);
+    this._lastKey = key;
   }
 
   _header() {
@@ -136,7 +155,7 @@ export class WeatherCard {
       b.connect('clicked', action);
       box.add_child(b);
     }
-    this.actor.add_child(box);
+    this._body.add_child(box);
   }
 
   _current(info) {
@@ -158,7 +177,7 @@ export class WeatherCard {
         row.add_child(mm);
       }
     } catch {}
-    this.actor.add_child(row);
+    this._body.add_child(row);
   }
 
   _hourly(info) {
@@ -173,7 +192,7 @@ export class WeatherCard {
       col.add_child(new St.Label({ text: tempText(fc) ?? '—', style_class: 'ec-hour-temp', x_align: Clutter.ActorAlign.CENTER }));
       row.add_child(col);
     }
-    this.actor.add_child(row);
+    this._body.add_child(row);
   }
 
   _chips(info) {
@@ -187,7 +206,7 @@ export class WeatherCard {
     chip('Sensação', clean(info.get_apparent()));
     chip('Vento', clean(info.get_wind()));
     chip('Umidade', clean(info.get_humidity()));
-    this.actor.add_child(row);
+    this._body.add_child(row);
   }
 
   destroy() {
