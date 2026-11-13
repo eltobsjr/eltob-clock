@@ -35,7 +35,7 @@ zip="dist/eltob-clock@eltobsjr.gmail.com.v${version}.shell-extension.zip"
 say "Checking $zip"
 [[ -f "$zip" ]] || { say "ERROR: $zip not found (run ./tools/build.sh)"; exit 1; }
 
-for f in metadata.json extension.js prefs.js presets.js stylesheet.css \
+for f in metadata.json extension.js prefs.js presets.js timerlogic.js clockstate.js popup.js weatherview.js barpills.js stylesheet.css \
          icons/eltob-clock-symbolic.svg \
          schemas/org.gnome.shell.extensions.eltob-clock.gschema.xml; do
   check_zip_has "$zip" "$f"

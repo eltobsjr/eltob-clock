@@ -11,7 +11,7 @@ mkdir -p "$WORK/ext" "$WORK/config"
 
 cp -r "$ROOT_DIR"/src/{metadata.json,presets.js,schemas} "$WORK/ext/"
 glib-compile-schemas "$WORK/ext/schemas"
-cp "$ROOT_DIR/tools/media/showcase/shim.js" "$ROOT_DIR/tools/tests/prefs.test.js" "$WORK/ext/"
+cp "$ROOT_DIR/tools/tests/prefs-shim.js" "$WORK/ext/shim.js"; cp "$ROOT_DIR/tools/tests/prefs.test.js" "$WORK/ext/"
 sed "s#resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js#./shim.js#" \
     "$ROOT_DIR/src/prefs.js" > "$WORK/ext/prefs.js"
 

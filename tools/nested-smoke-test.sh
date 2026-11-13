@@ -34,7 +34,7 @@ gsettings set org.gnome.shell enabled-extensions "['$UUID','eltob-clock-test@loc
 # Abort unless gsettings wrote to the isolated dconf database.
 sleep 1
 [ -s "\$XDG_CONFIG_HOME/dconf/user" ] || { echo "ISOLATION FAILED - aborting"; exit 1; }
-MUTTER_DEBUG_DUMMY_MODE_SPECS=1280x800 timeout 40 gnome-shell --nested --wayland || true
+MUTTER_DEBUG_DUMMY_MODE_SPECS=1280x800 timeout 60 gnome-shell --headless --wayland --no-x11 --virtual-monitor 1280x800 || true
 RUN
 
 # XDG_* must be set before dbus-run-session so D-Bus-activated dconf uses them.

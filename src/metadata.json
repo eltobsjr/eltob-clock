@@ -1,6 +1,6 @@
 {
   "name": "Eltob Clock",
-  "description": "Top-bar numeric clock for GNOME Shell 45–51: DD/MM/YYYY, ISO 8601, 24-hour or 12-hour time with optional seconds, using any strftime format.\n\n* 8 one-click presets and a live preview\n* Panel icon: click for the quick menu, right-click for Preferences, middle-click to copy the time\n* Menu style: System, Light or Dark\n* About and Donate right in the menu\n* Ticks exactly on the second\n* Restores the stock clock when disabled\n\nWayland & X11/Xorg. No network access.",
+  "description": "Relógio da barra do GNOME com formato livre, mais timer, cronômetro e clima no popup.\n\n* Formato strftime livre com prévia e 8 presets\n* Timer e cronômetro no popup, com pílulas na barra e aviso ao terminar\n* Clima do próprio GNOME (libgweather + GeoClue), sem rede nem localização guardadas pela extensão\n* Visual da família Eltob Indicator (Catppuccin Macchiato)\n\nFork do Numeric Clock (MIT, Nick Otmazgin). Wayland e X11.",
   "uuid": "eltob-clock@eltobsjr.gmail.com",
   "shell-version": [
     "45",
@@ -11,12 +11,9 @@
     "50",
     "51"
   ],
-  "version": 32,
-  "version-name": "17.7.0 45.51",
+  "version": 33,
+  "version-name": "1.0.0 45.51",
   "settings-schema": "org.gnome.shell.extensions.eltob-clock",
   "gettext-domain": "eltob-clock",
-  "url": "https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clock",
-  "donations": {
-    "paypal": "nickotmazgin"
-  }
+  "url": "https://github.com/eltobsjr/eltob-clock"
 }

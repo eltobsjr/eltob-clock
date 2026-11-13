@@ -1,43 +1,88 @@
-/* Eltob Clock. The panel icon takes its size and color from the shell
-   theme's system-status-icon class; this styles the tooltip and the optional
-   light/dark menu styles (System follows the shell theme). */
+/* Eltob Clock — visual da familia "Eltob Indicator Design v1".
+   Paleta Catppuccin Macchiato, acento azul. Tokens:
+   mantle #1e2030 · base #24273a · surface0 #363a4f · surface1 #494d64 · text #cad3f5
+   subtext0 #a5adcb · overlay1 #8087a2 · blue #8aadf4 · lavender #b7bdf8
+   green #a6da95 · yellow #eed49f · red #ed8796
+   Raios: controles 8 · cartoes 12 · pilulas 100. Estado usa verde/amarelo/vermelho, nunca o acento. */
 
-.eltob-clock-tooltip { font-size: 0.9em; }
+/* ---- Terceira coluna e cartoes ---- */
+.ec-col { min-width: 290px; padding: 6px 6px 6px 14px; spacing: 8px; border-left: 1px solid rgba(73, 77, 100, 0.8); margin-left: 8px; color: #cad3f5; }
+.ec-row { spacing: 8px; }
+.ec-col-gap { spacing: 6px; }
+.ec-card { background-color: rgba(54, 58, 79, 0.55); border-radius: 12px; padding: 10px 12px; spacing: 6px; }
+.ec-title { font-size: 0.82em; font-weight: 700; color: #b7bdf8; }
+.ec-dim { color: #a5adcb; }
+.ec-small { font-size: 0.85em; }
+.ec-tiny { font-size: 0.72em; }
+.ec-head { padding: 2px 2px 0 2px; }
+.ec-clock { font-size: 1.6em; font-weight: 800; font-feature-settings: "tnum"; }
 
-/* ---- Menu style: Light ---- */
-.eltob-clock-style-light .popup-menu-content {
-  background-color: #fafafb;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  color: #2e3436;
-}
-.eltob-clock-style-light .popup-menu-item { color: #2e3436; }
-.eltob-clock-style-light .popup-menu-item:insensitive { color: rgba(46, 52, 54, 0.6); }
-.eltob-clock-style-light .popup-menu-item:hover,
-.eltob-clock-style-light .popup-menu-item:focus { background-color: rgba(0, 0, 0, 0.08); color: #2e3436; }
-.eltob-clock-style-light .popup-menu-item:active,
-.eltob-clock-style-light .popup-menu-item:checked { background-color: rgba(0, 0, 0, 0.12); color: #2e3436; }
-.eltob-clock-style-light .popup-sub-menu { background-color: rgba(0, 0, 0, 0.04); }
-.eltob-clock-style-light .popup-separator-menu-item-separator { background-color: rgba(0, 0, 0, 0.1); }
-.eltob-clock-style-light .popup-menu-ornament,
-.eltob-clock-style-light .popup-menu-arrow,
-.eltob-clock-style-light .popup-menu-icon { color: #2e3436; }
-.eltob-clock-tooltip-light { background-color: #fafafb; color: #2e3436; border: 1px solid rgba(0, 0, 0, 0.15); }
+/* ---- Botoes e chips ---- */
+.ec-btn { background-color: #363a4f; color: #cad3f5; border-radius: 8px; padding: 5px 10px; font-size: 0.9em; font-weight: 700; text-align: center; }
+.ec-btn:hover, .ec-btn:focus { background-color: #494d64; }
+.ec-btn-primary { background-color: #8aadf4; color: #24273a; }
+.ec-btn-primary:hover, .ec-btn-primary:focus { background-color: #b7bdf8; }
+.ec-chip-row { spacing: 4px; }
+.ec-chip { background-color: #363a4f; color: #cad3f5; border-radius: 100px; padding: 2px 9px; font-size: 0.85em; font-weight: 700; }
+.ec-chip:hover, .ec-chip:focus { background-color: #494d64; }
+.ec-chip:checked { background-color: #8aadf4; color: #24273a; }
 
-/* ---- Menu style: Dark ---- */
-.eltob-clock-style-dark .popup-menu-content {
-  background-color: #2b2b2e;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-}
-.eltob-clock-style-dark .popup-menu-item { color: #ffffff; }
-.eltob-clock-style-dark .popup-menu-item:insensitive { color: rgba(255, 255, 255, 0.6); }
-.eltob-clock-style-dark .popup-menu-item:hover,
-.eltob-clock-style-dark .popup-menu-item:focus { background-color: rgba(255, 255, 255, 0.1); color: #ffffff; }
-.eltob-clock-style-dark .popup-menu-item:active,
-.eltob-clock-style-dark .popup-menu-item:checked { background-color: rgba(255, 255, 255, 0.15); color: #ffffff; }
-.eltob-clock-style-dark .popup-sub-menu { background-color: rgba(255, 255, 255, 0.04); }
-.eltob-clock-style-dark .popup-separator-menu-item-separator { background-color: rgba(255, 255, 255, 0.1); }
-.eltob-clock-style-dark .popup-menu-ornament,
-.eltob-clock-style-dark .popup-menu-arrow,
-.eltob-clock-style-dark .popup-menu-icon { color: #ffffff; }
-.eltob-clock-tooltip-dark { background-color: #1e1e20; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.12); }
+/* ---- Timer e cronometro ---- */
+.ec-timer-body { spacing: 12px; }
+.ec-ring-text { font-size: 0.95em; font-weight: 800; font-feature-settings: "tnum"; }
+.ec-sw-time { font-size: 2.2em; font-weight: 800; font-feature-settings: "tnum"; padding: 2px 0 4px 0; }
+
+/* ---- Acoes ---- */
+.ec-act { background-color: #363a4f; color: #cad3f5; border-radius: 8px; height: 32px; padding: 0 10px; font-size: 0.85em; font-weight: 700; }
+.ec-act:hover, .ec-act:focus { background-color: #494d64; }
+.ec-act-box { spacing: 8px; }
+.ec-act-ic { color: #8aadf4; }
+.ec-act-chev { color: #8087a2; }
+.ec-sub { padding: 4px; background-color: rgba(36, 39, 58, 0.7); border-radius: 12px; }
+.ec-sub-scroll { max-height: 190px; margin-top: 4px; }
+.ec-sub-item { border-radius: 8px; padding: 5px 8px; font-size: 0.85em; color: #cad3f5; }
+.ec-sub-item:hover, .ec-sub-item:focus { background-color: #363a4f; }
+.ec-sub-item:checked { background-color: rgba(138, 173, 244, 0.18); color: #8aadf4; }
+
+/* ---- Clima ---- */
+.ec-weather { padding: 10px 12px; spacing: 8px; }
+.ec-weather-now { spacing: 12px; }
+.ec-weather-temp { font-size: 1.9em; font-weight: 800; font-feature-settings: "tnum"; }
+.ec-weather-icon { color: #cad3f5; }
+.ec-weather-minmax { spacing: 2px; }
+.ec-hours { spacing: 4px; padding-top: 2px; }
+.ec-hour { spacing: 2px; }
+.ec-hour-temp { font-size: 0.85em; font-weight: 700; font-feature-settings: "tnum"; }
+.ec-chips { spacing: 6px; }
+.ec-chip-box { background-color: rgba(36, 39, 58, 0.7); border-radius: 8px; padding: 5px 8px; }
+.ec-chip-value { font-size: 0.9em; font-weight: 700; }
+
+/* ---- Pilulas na barra ---- */
+.ec-pills { spacing: 6px; margin-left: 8px; }
+.ec-pill { font-size: 0.78em; font-weight: 700; border-radius: 100px; padding: 1px 8px; font-feature-settings: "tnum"; }
+.ec-pill-wx { spacing: 4px; }
+.ec-pill-ok { background-color: rgba(166, 218, 149, 0.18); color: #a6da95; }
+.ec-pill-warn { background-color: rgba(238, 212, 159, 0.18); color: #eed49f; }
+.ec-pill-crit { background-color: rgba(237, 135, 150, 0.22); color: #ed8796; }
+.ec-pill-blue { background-color: rgba(138, 173, 244, 0.18); color: #8aadf4; }
+.ec-pill-neutral { background-color: rgba(54, 58, 79, 0.9); color: #cad3f5; }
+
+/* ---- Estilo: Claro (so os nossos cartoes) ---- */
+.ec-style-light { color: #2e3436; border-left-color: rgba(0, 0, 0, 0.12); }
+.ec-style-light .ec-card { background-color: rgba(0, 0, 0, 0.06); }
+.ec-style-light .ec-title { color: #4c4f69; }
+.ec-style-light .ec-dim { color: #5c5f77; }
+.ec-style-light .ec-btn, .ec-style-light .ec-chip, .ec-style-light .ec-act { background-color: rgba(0, 0, 0, 0.09); color: #2e3436; }
+.ec-style-light .ec-btn:hover, .ec-style-light .ec-chip:hover, .ec-style-light .ec-act:hover { background-color: rgba(0, 0, 0, 0.16); }
+.ec-style-light .ec-btn-primary, .ec-style-light .ec-chip:checked { background-color: #1e66f5; color: #ffffff; }
+.ec-style-light .ec-chip-box, .ec-style-light .ec-sub { background-color: rgba(0, 0, 0, 0.05); }
+.ec-style-light .ec-weather-icon, .ec-style-light .ec-act-ic { color: #1e66f5; }
+
+/* ---- Estilo: Escuro (neutro) ---- */
+.ec-style-dark { color: #ffffff; border-left-color: rgba(255, 255, 255, 0.1); }
+.ec-style-dark .ec-card { background-color: rgba(255, 255, 255, 0.07); }
+.ec-style-dark .ec-title { color: #c0bfbc; }
+.ec-style-dark .ec-dim { color: #b8b8b8; }
+.ec-style-dark .ec-btn, .ec-style-dark .ec-chip, .ec-style-dark .ec-act { background-color: rgba(255, 255, 255, 0.1); color: #ffffff; }
+.ec-style-dark .ec-btn:hover, .ec-style-dark .ec-chip:hover, .ec-style-dark .ec-act:hover { background-color: rgba(255, 255, 255, 0.18); }
+.ec-style-dark .ec-chip-box, .ec-style-dark .ec-sub { background-color: rgba(0, 0, 0, 0.25); }

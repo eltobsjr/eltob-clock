@@ -10,16 +10,14 @@ import {
   formatNow, formatShowsSeconds, isValidFormat,
 } from './presets.js';
 
-const REPO_URL = 'https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clock';
+const REPO_URL = 'https://github.com/eltobsjr/eltob-clock';
+const UPSTREAM_URL = 'https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clock';
 const DONATE_URL = 'https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW';
-const EMAIL = 'nickotmazgin.dev@gmail.com';
 const AUTHOR = 'Nick Otmazgin (original), fork de Eltob';
 const SETTING_KEYS = [
-  'format-string', 'update-interval', 'only-topbar', 'smooth-second',
-  'show-panel-icon', 'clock-secondary-opens-menu',
-  'menu-style', 'icon-right-click', 'icon-middle-click',
+  'format-string', 'update-interval', 'only-topbar', 'smooth-second', 'menu-style',
+  'bar-pills', 'timer-sound', 'weather-enabled', 'weather-auto-location', 'weather-bar-pill',
 ];
-const CLICK_ACTIONS = [['menu', 'Open quick menu'], ['preferences', 'Open Preferences'], ['copy', 'Copy current time']];
 const CHEATSHEET = [
   ['%d / %m / %Y', 'Day · month · year (22 / 10 / 2026)'],
   ['%H : %M : %S', '24-hour time (13:05:09)'],
@@ -58,7 +56,7 @@ function comboRow(settings, key, title, subtitle, choices) {
   return row;
 }
 
-export default class NumericClockPrefs extends ExtensionPreferences {
+export default class EltobClockPrefs extends ExtensionPreferences {
   fillPreferencesWindow(window) {
     const settings = this.getSettings();
     const metadata = this.metadata || {};
@@ -68,18 +66,18 @@ export default class NumericClockPrefs extends ExtensionPreferences {
 
     // ── Settings page ───────────────────────────────────────────────
     const pageSettings = new Adw.PreferencesPage({
-      title: _('Settings'),
+      title: _('Opções'),
       icon_name: 'preferences-system-symbolic',
     });
 
     const groupFormat = new Adw.PreferencesGroup({
-      title: _('Clock format'),
-      description: _('Uses your system locale and timezone'),
+      title: _('Formato do relógio'),
+      description: _('Usa o idioma e o fuso do sistema'),
     });
 
     // Edits are saved only on Enter or the apply button, so a stray key press
     // (Preferences can open straight from a panel click) never changes the clock.
-    const rowFmt = new Adw.EntryRow({ title: _('Format string'), show_apply_button: true });
+    const rowFmt = new Adw.EntryRow({ title: _('Formato (strftime)'), show_apply_button: true });
     const showSaved = () => {
       // Setting text programmatically would otherwise reveal the apply button.
       rowFmt.show_apply_button = false;
@@ -89,7 +87,7 @@ export default class NumericClockPrefs extends ExtensionPreferences {
     showSaved();
     groupFormat.add(rowFmt);
 
-    const rowPreview = new Adw.ActionRow({ title: _('Preview') });
+    const rowPreview = new Adw.ActionRow({ title: _('Prévia') });
     const preview = new Gtk.Label({ selectable: true, hexpand: true, xalign: 1, wrap: true, css_classes: ['numeric'] });
     rowPreview.add_suffix(preview);
     groupFormat.add(rowPreview);
@@ -103,13 +101,13 @@ export default class NumericClockPrefs extends ExtensionPreferences {
       const valid = isValidFormat(fmt);
       preview.label = formatNow(fmt);
       if (!valid)
-        rowPreview.subtitle = _('Invalid or empty format — it will not be saved');
+        rowPreview.subtitle = _('Formato inválido ou vazio — não será salvo');
       else if (!fmt.includes('%'))
-        rowPreview.subtitle = _('No % codes — the clock would show this text as it is');
+        rowPreview.subtitle = _('Sem códigos % — o relógio mostraria este texto como está');
       else if (fmt !== settings.get_string('format-string'))
-        rowPreview.subtitle = _('Press Enter or ✓ to apply');
+        rowPreview.subtitle = _('Enter ou ✓ para aplicar');
       else
-        rowPreview.subtitle = _('Live sample');
+        rowPreview.subtitle = _('Amostra ao vivo');
       if (valid && fmt.includes('%')) rowFmt.remove_css_class('error');
       else rowFmt.add_css_class('error');
       for (const [row, preset] of presetRows)
@@ -127,8 +125,8 @@ export default class NumericClockPrefs extends ExtensionPreferences {
     };
 
     const cheatsheet = new Adw.ExpanderRow({
-      title: _('Format codes'),
-      subtitle: _('Common strftime codes — combine them freely'),
+      title: _('Códigos de formato'),
+      subtitle: _('Códigos strftime comuns — combine à vontade'),
     });
     for (const [code, meaning] of CHEATSHEET) {
       const row = new Adw.ActionRow({ title: code, subtitle: _(meaning) });
@@ -138,54 +136,61 @@ export default class NumericClockPrefs extends ExtensionPreferences {
     groupFormat.add(cheatsheet);
     pageSettings.add(groupFormat);
 
-    const groupBehavior = new Adw.PreferencesGroup({ title: _('Behavior') });
+    const groupBehavior = new Adw.PreferencesGroup({ title: _('Comportamento') });
     const rowInt = new Adw.SpinRow({
-      title: _('Update interval (seconds)'),
-      subtitle: _('Use 1 when the format shows seconds'),
+      title: _('Intervalo de atualização (segundos)'),
+      subtitle: _('Use 1 quando o formato mostra segundos'),
       adjustment: new Gtk.Adjustment({ lower: 1, upper: 300, step_increment: 1, page_increment: 5 }),
       numeric: true,
     });
     settings.bind('update-interval', rowInt, 'value', Gio.SettingsBindFlags.DEFAULT);
     groupBehavior.add(rowInt);
     groupBehavior.add(switchRow(settings, 'smooth-second',
-      _('Smooth tick'),
-      _('Update exactly on each second boundary')));
+      _('Tique exato'),
+      _('Atualiza exatamente na virada de cada segundo')));
     groupBehavior.add(switchRow(settings, 'only-topbar',
-      _('Only change the top bar clock'),
-      _('Recommended. When off, other panel and dock clocks are formatted too.')));
+      _('Mudar só o relógio da barra'),
+      _('Recomendado. Desligado, relógios de outros painéis e docks também são formatados.')));
     pageSettings.add(groupBehavior);
 
-    const groupLook = new Adw.PreferencesGroup({ title: _('Appearance') });
-    groupLook.add(comboRow(settings, 'menu-style', _('Menu style'),
-      _('Quick menu and tooltip colors. System follows the shell theme.'),
-      [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']]));
+    const groupLook = new Adw.PreferencesGroup({ title: _('Aparência') });
+    groupLook.add(comboRow(settings, 'menu-style', _('Estilo do popup'),
+      _('Cores dos nossos cartões. Padrão = paleta Eltob (Macchiato).'),
+      [['system', 'Padrão'], ['light', 'Claro'], ['dark', 'Escuro']]));
     pageSettings.add(groupLook);
 
-    const groupAccess = new Adw.PreferencesGroup({ title: _('Quick access') });
-    groupAccess.add(switchRow(settings, 'show-panel-icon',
-      _('Show panel icon'),
-      _('Clock icon in the top bar with presets, copy time and preferences')));
-    groupAccess.add(switchRow(settings, 'clock-secondary-opens-menu',
-      _('Right-click clock for quick menu'),
-      _('Right-click or middle-click the clock. Left-click still opens the GNOME calendar.')));
-    pageSettings.add(groupAccess);
+    const groupTimer = new Adw.PreferencesGroup({ title: _('Timer e cronômetro') });
+    groupTimer.add(switchRow(settings, 'bar-pills',
+      _('Pílulas na barra'),
+      _('Mostra o timer e o cronômetro ao lado do relógio enquanto estiverem ativos')));
+    groupTimer.add(switchRow(settings, 'timer-sound',
+      _('Som ao terminar'),
+      _('Toca o som "complete" do sistema, além da notificação')));
+    pageSettings.add(groupTimer);
 
-    const groupClicks = new Adw.PreferencesGroup({
-      title: _('Panel icon clicks'),
-      description: _('Left-click always opens the quick menu'),
+    const groupWeather = new Adw.PreferencesGroup({
+      title: _('Clima'),
+      description: _('Usa o serviço de clima do próprio GNOME (libgweather). A extensão não faz chamadas de rede nem guarda a sua localização.'),
     });
-    groupClicks.add(comboRow(settings, 'icon-right-click', _('Right-click'), null, CLICK_ACTIONS));
-    groupClicks.add(comboRow(settings, 'icon-middle-click', _('Middle-click'), null, CLICK_ACTIONS));
-    pageSettings.add(groupClicks);
+    groupWeather.add(switchRow(settings, 'weather-enabled',
+      _('Cartão de clima no popup'),
+      _('Temperatura, previsão por hora, sensação, vento e umidade')));
+    groupWeather.add(switchRow(settings, 'weather-auto-location',
+      _('Localização automática'),
+      _('Liga a localização automática do clima do GNOME (GeoClue). Exige Serviços de localização ativos em Configurações, Privacidade.')));
+    groupWeather.add(switchRow(settings, 'weather-bar-pill',
+      _('Temperatura na barra'),
+      _('Pílula com o ícone e a temperatura ao lado do relógio')));
+    pageSettings.add(groupWeather);
 
     const groupPresets = new Adw.PreferencesGroup({
-      title: _('Format presets'),
-      description: _('One-click formats — the sample uses your system locale and timezone'),
+      title: _('Presets de formato'),
+      description: _('Formatos de um clique — a amostra usa o idioma e o fuso do sistema'),
     });
     for (const preset of FORMAT_PRESETS) {
       const row = new Adw.ActionRow({ title: _(preset.label) });
       row.add_css_class('property');
-      const btn = new Gtk.Button({ label: _('Apply'), valign: Gtk.Align.CENTER });
+      const btn = new Gtk.Button({ label: _('Aplicar'), valign: Gtk.Align.CENTER });
       btn.connect('clicked', () => applyPresetToSettings(settings, preset));
       row.add_suffix(btn);
       row.activatable_widget = btn;
@@ -196,11 +201,11 @@ export default class NumericClockPrefs extends ExtensionPreferences {
 
     const groupReset = new Adw.PreferencesGroup();
     const rowReset = new Adw.ActionRow({
-      title: _('Reset to defaults'),
-      subtitle: _('Restore every setting on this page'),
+      title: _('Restaurar padrões'),
+      subtitle: _('Volta todas as opções desta página ao padrão'),
     });
     const btnReset = new Gtk.Button({
-      label: _('Reset'), valign: Gtk.Align.CENTER, css_classes: ['destructive-action'],
+      label: _('Restaurar'), valign: Gtk.Align.CENTER, css_classes: ['destructive-action'],
     });
     btnReset.connect('clicked', () => {
       for (const key of SETTING_KEYS)
@@ -213,21 +218,21 @@ export default class NumericClockPrefs extends ExtensionPreferences {
 
     // ── About page ──────────────────────────────────────────────────
     const pageAbout = new Adw.PreferencesPage({
-      title: _('About'),
+      title: _('Sobre'),
       icon_name: 'help-about-symbolic',
     });
 
-    const groupInfo = new Adw.PreferencesGroup({ title: _('Extension') });
+    const groupInfo = new Adw.PreferencesGroup({ title: _('Extensão') });
     const infoRow = (title, subtitle) => {
       const row = new Adw.ActionRow({ title, subtitle, subtitle_selectable: true });
       row.add_css_class('property');
       groupInfo.add(row);
     };
-    infoRow(_('Name'), metadata.name || 'Eltob Clock');
-    infoRow(_('Version'), metadata['version-name'] || String(metadata.version ?? ''));
-    infoRow(_('Developer'), AUTHOR);
-    infoRow(_('Description'),
-      _('International numeric top-bar clock — configurable date/time format, panel icon, and live preview.'));
+    infoRow(_('Nome'), metadata.name || 'Eltob Clock');
+    infoRow(_('Versão'), metadata['version-name'] || String(metadata.version ?? ''));
+    infoRow(_('Desenvolvedor'), AUTHOR);
+    infoRow(_('Descrição'),
+      _('Relógio da barra com formato livre, timer, cronômetro e clima no popup. Fork do Numeric Clock.'));
     pageAbout.add(groupInfo);
 
     const groupLinks = new Adw.PreferencesGroup({ title: _('Links') });
@@ -237,16 +242,15 @@ export default class NumericClockPrefs extends ExtensionPreferences {
       row.connect('activated', () => launchUri(uri));
       groupLinks.add(row);
     };
-    addLinkRow(_('GitHub repository'), REPO_URL);
-    addLinkRow(_('Report an issue'), `${REPO_URL}/issues`);
-    addLinkRow(_('Latest release'), `${REPO_URL}/releases/latest`);
-    addLinkRow(_('Donate via PayPal'), DONATE_URL);
-    addLinkRow(EMAIL, `mailto:${EMAIL}`, 'mail-unread-symbolic');
+    addLinkRow(_('Repositório do Eltob Clock'), REPO_URL);
+    addLinkRow(_('Reportar um problema'), `${REPO_URL}/issues`);
+    addLinkRow(_('Numeric Clock original (Nick Otmazgin)'), UPSTREAM_URL);
+    addLinkRow(_('Apoiar o autor original (PayPal)'), DONATE_URL);
     pageAbout.add(groupLinks);
 
     window.add(pageSettings);
     window.add(pageAbout);
-    // "About Eltob Clock" in the quick menu asks for the About page.
+    // O botão "Sobre" do popup pede a página Sobre.
     if (settings.get_string('prefs-page') === 'about') {
       window.set_visible_page(pageAbout);
       settings.reset('prefs-page');

@@ -22,16 +22,6 @@
       <summary>Smooth tick alignment</summary>
       <description>Align the first update to the next second boundary when the interval is 1s.</description>
     </key>
-    <key name="show-panel-icon" type="b">
-      <default>true</default>
-      <summary>Show panel access icon</summary>
-      <description>Display a clock icon in the top bar for quick preferences, presets, and copy-time access.</description>
-    </key>
-    <key name="clock-secondary-opens-menu" type="b">
-      <default>true</default>
-      <summary>Right-click clock for quick menu</summary>
-      <description>Right-click or middle-click the formatted top-bar clock to open the Eltob Clock quick menu. Left-click still opens the GNOME calendar.</description>
-    </key>
     <key name="menu-style" type="s">
       <choices>
         <choice value="system"/>
@@ -42,25 +32,30 @@
       <summary>Menu style</summary>
       <description>Quick menu and tooltip appearance: follow the shell theme (system), or always light or dark.</description>
     </key>
-    <key name="icon-right-click" type="s">
-      <choices>
-        <choice value="menu"/>
-        <choice value="preferences"/>
-        <choice value="copy"/>
-      </choices>
-      <default>'preferences'</default>
-      <summary>Panel icon right-click</summary>
-      <description>What right-clicking the panel icon does: open the quick menu, open Preferences, or copy the current time. Left-click always opens the quick menu.</description>
+    <key name="bar-pills" type="b">
+      <default>true</default>
+      <summary>Pills in the top bar</summary>
+      <description>Show the running timer and stopwatch as small pills next to the clock.</description>
     </key>
-    <key name="icon-middle-click" type="s">
-      <choices>
-        <choice value="menu"/>
-        <choice value="preferences"/>
-        <choice value="copy"/>
-      </choices>
-      <default>'copy'</default>
-      <summary>Panel icon middle-click</summary>
-      <description>What middle-clicking the panel icon does: open the quick menu, open Preferences, or copy the current time.</description>
+    <key name="timer-sound" type="b">
+      <default>true</default>
+      <summary>Timer sound</summary>
+      <description>Play the system "complete" sound when a timer ends, besides the notification.</description>
+    </key>
+    <key name="weather-enabled" type="b">
+      <default>true</default>
+      <summary>Weather card</summary>
+      <description>Show the weather card in the clock popup, using GNOME's own weather service (libgweather).</description>
+    </key>
+    <key name="weather-auto-location" type="b">
+      <default>true</default>
+      <summary>Automatic location</summary>
+      <description>Turn on GNOME's automatic weather location (GeoClue) when the extension starts. Needs Location Services enabled in Settings, Privacy.</description>
+    </key>
+    <key name="weather-bar-pill" type="b">
+      <default>true</default>
+      <summary>Temperature pill in the top bar</summary>
+      <description>Show the current temperature as a pill next to the clock.</description>
     </key>
     <key name="prefs-page" type="s">
       <choices>
@@ -69,7 +64,7 @@
       </choices>
       <default>'settings'</default>
       <summary>Preferences page to open</summary>
-      <description>Set to 'about' by the quick menu's About item; Preferences opens that page and sets it back to 'settings'.</description>
+      <description>Set to 'about' by the popup's About button; Preferences opens that page and sets it back to 'settings'.</description>
     </key>
   </schema>
 </schemalist>
