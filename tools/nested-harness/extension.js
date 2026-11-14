@@ -163,7 +163,7 @@ async function run() {
   check('compositor na barra', findByClass(dm, 'ec-bar').length === 1);
   check('blocos padrao', blocks().map(b => b.spec.kind).join() === 'time,stopwatch,timer,weather', blocks().map(b => b.spec.kind).join());
   check('bloco de hora usa o formato global', block('time').actor.text === fmt('%d/%m/%Y %H:%M:%S'), block('time').actor.text);
-  check('bloco de hora tem a fonte do relogio', block('time').actor.has_style_class_name('clock'));
+  check('bloco de hora nao usa a classe clock (temas forcam altura nela)', !block('time').actor.has_style_class_name('clock'));
   check('pilulas comecam escondidas', !block('timer').actor.visible && !block('stopwatch').actor.visible);
 
   s.set_strv('bar-layout', ['time|plain|%a %d/%m', 'text|plain|•', 'time|pill-blue|%H:%M']);

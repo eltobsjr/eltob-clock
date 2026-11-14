@@ -19,7 +19,7 @@ const PILL_CLASS = {
 
 /** Classes de estilo de um bloco; `level` ('ok'|'warn'|'crit') so importa no estilo "auto" do timer. */
 export function styleClassFor(style, level = 'ok') {
-  if (style === 'plain') return 'clock ec-bar-plain';
+  if (style === 'plain') return 'ec-bar-plain';
   if (style === 'auto') return `ec-pill ec-pill-${level}`;
   return `ec-pill ${PILL_CLASS[style] ?? 'ec-pill-neutral'}`;
 }

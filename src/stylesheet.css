@@ -59,7 +59,7 @@
 
 /* ---- Pilulas na barra ---- */
 .ec-bar { spacing: 6px; }
-.ec-bar-plain { }
+.ec-bar-plain { font-weight: bold; }
 .ec-compact-time { font-size: 1.25em; font-weight: 800; font-feature-settings: "tnum"; min-width: 70px; }
 .ec-head-compact .ec-clock { font-size: 1.15em; }
 .ec-weather-body { spacing: 8px; }
